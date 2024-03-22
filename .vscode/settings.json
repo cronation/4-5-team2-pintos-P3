@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "*.inc": "c",
+        "syscall.h": "c",
+        "timer.h": "c",
+        "unistd.h": "c",
+        "unistd_64.h": "c",
+        "lib.h": "c",
+        "thread.h": "c",
+        "stdio.h": "c",
+        "filesys.h": "c",
+        "interrupt.h": "c",
+        "stddef.h": "c",
+        "process.h": "c",
+        "file.h": "c",
+        "init.h": "c"
+    }
+}
