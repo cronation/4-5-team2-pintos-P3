@@ -4,6 +4,11 @@
 #include "vm/vm.h"
 #include "vm/inspect.h"
 
+#include "threads/vaddr.h"
+#include "threads/mmu.h"
+#include "lib/kernel/hash.h"
+#include "include/threads/thread.h"
+
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
 void
@@ -189,3 +194,5 @@ supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
 }
+
+/////adlfkna;ldfn;alsndfklanfd;lnas;fnk

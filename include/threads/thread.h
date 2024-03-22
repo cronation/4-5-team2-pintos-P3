@@ -10,6 +10,8 @@
 #include "vm/vm.h"
 #endif
 
+#include "lib/kernel/hash.h"
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -130,16 +132,19 @@ struct thread {
   struct semaphore wait_sema;         //* WAIT
   struct semaphore exit_sema;         //* WAIT
 
-  // struct hash vm;
 #endif
 #ifdef VM
   /* Table for whole virtual memory owned by thread. */
   struct supplemental_page_table spt;
+
 #endif
 
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
+
+  // struct hash vm;
+  // struct hash_elem vm_elem;
 };
 
 /* If false (default), use round-robin scheduler.
