@@ -1,0 +1,4 @@
+.vscode
+userprog/build
+threads/build
+vm/build
