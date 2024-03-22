@@ -195,4 +195,3 @@ supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	 * TODO: writeback all the modified contents to the storage. */
 }
 
-/////adlfkna;ldfn;alsndfklanfd;lnas;fnk
