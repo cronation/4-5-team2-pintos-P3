@@ -129,6 +129,8 @@ struct thread {
   struct semaphore load_sema;         //* WAIT
   struct semaphore wait_sema;         //* WAIT
   struct semaphore exit_sema;         //* WAIT
+
+  // struct hash vm;
 #endif
 #ifdef VM
   /* Table for whole virtual memory owned by thread. */

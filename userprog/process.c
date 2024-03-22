@@ -149,6 +149,28 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 }
 #endif
 
+/* for project 3*/
+// static void start_process(void*file_name_){
+	//...
+	// initializing the set of vm_emtries, e.g. hash table
+	//...
+	// initialize interrupt frame and load executable
+	// memset (&if_ , 0 , sizeof if_);
+	// ...
+// }
+
+// void process_exit(void){
+	// struct thread * cur = thread_current();
+	// uint32_t * pd;
+	// ...
+	// palloc_free_page(cur->fd);
+	
+	// add vm_entry delete function
+	// pd = cur->pagedir;
+	// ...
+// }
+
+
 /* A thread function that copies parent's execution context.
  * Hint) parent->tf does not hold the userland context of the process.
  *       That is, you are required to pass second argument of process_fork to
@@ -172,8 +194,8 @@ __do_fork (void *aux) {
 
   process_activate (curr);
 #ifdef VM
-	supplemental_page_table_init (&current->spt);
-	if (!supplemental_page_table_copy (&current->spt, &parent->spt))
+	supplemental_page_table_init (&curr->spt);
+	if (!supplemental_page_table_copy (&curr->spt, &parent->spt))
 		goto error;
 #else
 	if (!pml4_for_each (parent->pml4, duplicate_pte, parent))
@@ -644,6 +666,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		 * and zero the final PAGE_ZERO_BYTES bytes. */
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
+
+		// delete allocating and mapping physical page part
 
 		/* Get a page of memory. */
 		uint8_t *kpage = palloc_get_page (PAL_USER);

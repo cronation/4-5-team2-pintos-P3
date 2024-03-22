@@ -13,4 +13,8 @@ void process_activate (struct thread *next);
 /* Project 2 - Argument Passing */
 static void argument_passing (struct intr_frame *if_, int argv_cnt, char **argv_list);
 
+/* project 3 - VM */
+static void start_process(void*file_name_);
+void process_exit(void);
+
 #endif /* userprog/process.h */
