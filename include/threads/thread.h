@@ -143,8 +143,7 @@ struct thread {
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
 
-  // struct hash vm;
-  // struct hash_elem vm_elem;
+  struct hash * spt;
 };
 
 /* If false (default), use round-robin scheduler.
