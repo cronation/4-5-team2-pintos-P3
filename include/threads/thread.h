@@ -132,6 +132,8 @@ struct thread {
   struct semaphore wait_sema;         //* WAIT
   struct semaphore exit_sema;         //* WAIT
 
+  uint32_t * pagedir;
+
 #endif
 #ifdef VM
   /* Table for whole virtual memory owned by thread. */
@@ -143,7 +145,6 @@ struct thread {
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
 
-  struct hash * spt;
 };
 
 /* If false (default), use round-robin scheduler.

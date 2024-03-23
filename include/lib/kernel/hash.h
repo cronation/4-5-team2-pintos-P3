@@ -50,6 +50,7 @@ typedef bool hash_less_func (const struct hash_elem *a,
 		const struct hash_elem *b,
 		void *aux);
 
+
 /* Performs some operation on hash element E, given auxiliary
  * data AUX. */
 typedef void hash_action_func (struct hash_elem *e, void *aux);
@@ -96,5 +97,15 @@ bool hash_empty (struct hash *);
 uint64_t hash_bytes (const void *, size_t);
 uint64_t hash_string (const char *);
 uint64_t hash_int (int);
+
+bool page_less (const struct hash_elem *a_, const struct hash_elem *b_, void *aux);
+
+unsigned page_hash (const struct hash_elem *p_, void *aux) {
+  const struct page *p = hash_entry (p_, struct page, hash_elem);
+  return hash_bytes (&p->addr, sizeof p->addr);
+}
+
+struct page *
+page_lookup (const void *address);
 
 #endif /* lib/kernel/hash.h */

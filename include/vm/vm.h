@@ -45,6 +45,9 @@ struct page {
 	void *va;              /* Address in terms of user space */
 	struct frame *frame;   /* Back reference for frame */
 
+	struct hash_elem hash_elem;
+	void * addr;
+
 	/* Your implementation */
 
 	/* Per-type data are binded into the union.
@@ -85,6 +88,25 @@ struct page_operations {
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
 struct supplemental_page_table {
+	uint8_t type;
+	void * vaddr;
+	bool writable;
+
+	bool is_loaded;
+	struct file * file;
+
+	/*memory mapped file에서 다룰예정*/
+	struct list_elem mmap_elem;
+
+	size_t offset;
+	size_t read_bytes;
+	size_t zero_bytes;
+
+	/* swapping 과제에서 다룰예정 */
+	size_t swap_slot;
+
+	/* hash table element */
+	struct hash_elem elem;
 	struct hash * hash;
 };
 
