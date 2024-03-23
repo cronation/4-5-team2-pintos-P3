@@ -4,6 +4,7 @@
 #include "vm/vm.h"
 #include "vm/inspect.h"
 #include "kernel/hash.h"
+#include "threads/mmu.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -125,8 +126,12 @@ static struct frame *
 vm_get_frame (void) {
 	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
-	PANIC("todo");
+	
+	frame = palloc_get_page(PAL_USER);
 
+	if (!frame)
+		PANIC("todo");   //swap out 해야 됨.
+	
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
 	return frame;
@@ -166,7 +171,10 @@ vm_dealloc_page (struct page *page) {
 bool
 vm_claim_page (void *va UNUSED) {
 	struct page *page = NULL;
+	struct thread *curr = thread_current();
 	/* TODO: Fill this function */
+
+	
 
 	return vm_do_claim_page (page);
 }
@@ -181,6 +189,8 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
+	frame->kva = page->va;
+	// pml4_set_page(&curr->pml4,va,)
 
 	return swap_in (page, frame->kva);
 }
@@ -188,9 +198,8 @@ vm_do_claim_page (struct page *page) {
 /* Initialize new supplemental page table */
 void
 supplemental_page_table_init (struct supplemental_page_table *spt) {
-		
-		struct page *p;
-		hash_init(&spt->spt_hash, page_hash, page_less, NULL);
+	
+	hash_init(&spt->spt_hash, page_hash, page_less, NULL);
 		
 }
 
