@@ -46,7 +46,7 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	/* Your implementation */
-
+	struct hash_elem hash_elem; /* 해시테이블 elem*/
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {
@@ -76,6 +76,7 @@ struct page_operations {
 	enum vm_type type;
 };
 
+
 #define swap_in(page, v) (page)->operations->swap_in ((page), v)
 #define swap_out(page) (page)->operations->swap_out (page)
 #define destroy(page) \
@@ -85,6 +86,7 @@ struct page_operations {
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
 struct supplemental_page_table {
+		struct hash *spt_hash;
 };
 
 #include "threads/thread.h"

@@ -13,6 +13,9 @@
         "stddef.h": "c",
         "process.h": "c",
         "file.h": "c",
-        "init.h": "c"
+        "init.h": "c",
+        "bitmap.h": "c",
+        "vm.h": "c",
+        "hash.h": "c"
     }
 }

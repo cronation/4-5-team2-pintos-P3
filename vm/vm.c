@@ -3,6 +3,7 @@
 #include "threads/malloc.h"
 #include "vm/vm.h"
 #include "vm/inspect.h"
+#include "kernel/hash.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -62,19 +63,29 @@ err:
 
 /* Find VA from spt and return page. On error, return NULL. */
 struct page *
-spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
+spt_find_page (struct supplemental_page_table *spt, void *va) {
 	struct page *page = NULL;
+	struct hash_elem *e;
 	/* TODO: Fill this function. */
+	page->va = va;
+	e = hash_find (spt->spt_hash,&page->hash_elem); 
 
-	return page;
+	return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
 }
+
 
 /* Insert PAGE into spt with validation. */
 bool
-spt_insert_page (struct supplemental_page_table *spt UNUSED,
-		struct page *page UNUSED) {
+spt_insert_page (struct supplemental_page_table *spt,
+		struct page *page) {
 	int succ = false;
 	/* TODO: Fill this function. */
+	
+	struct hash_elem *e;
+	e = hash_insert(spt->spt_hash,&page->hash_elem);
+	
+	if (e != NULL)
+		succ = true;
 
 	return succ;
 }
@@ -82,6 +93,8 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 	vm_dealloc_page (page);
+	hash_delete(spt->spt_hash,&page->hash_elem);
+
 	return true;
 }
 
@@ -112,6 +125,7 @@ static struct frame *
 vm_get_frame (void) {
 	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
+	PANIC("todo");
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
@@ -173,7 +187,11 @@ vm_do_claim_page (struct page *page) {
 
 /* Initialize new supplemental page table */
 void
-supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+supplemental_page_table_init (struct supplemental_page_table *spt) {
+		
+		struct page *p;
+		hash_init(&spt->spt_hash, page_hash, page_less, NULL);
+		
 }
 
 /* Copy supplemental page table from src to dst */
