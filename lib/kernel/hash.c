@@ -5,10 +5,11 @@
 
    See hash.h for basic information. */
 
-#include "hash.h"
+#include "lib/kernel/hash.h"
 #include "../debug.h"
 #include "threads/malloc.h"
-#include "vm.h"
+#include "vm/vm.h"
+#include "include/threads/thread.h"
 
 #define list_elem_to_hash_elem(LIST_ELEM)                       \
 	list_entry(LIST_ELEM, struct hash_elem, list_elem)
@@ -393,13 +394,16 @@ remove_elem (struct hash *h, struct hash_elem *e) {
 	list_remove (&e->list_elem);
 }
 
+/*page 멤버인 hash_elem으로 page를 찾고, 그 page의 va에 hash값을 추가해줌.*/
 unsigned
 page_hash (const struct hash_elem *p_, void *aux UNUSED) {
   const struct page *p = hash_entry (p_, struct page, hash_elem);
   return hash_bytes (&p->addr, sizeof p->addr);
 }
 
-bool page_less (const struct hash_elem *a_,
+/*해시 테이블 내 두 페이지 요소에 대해 페이지 주소 값을 비교*/
+bool
+page_less (const struct hash_elem *a_,
            const struct hash_elem *b_, void *aux UNUSED) {
   const struct page *a = hash_entry (a_, struct page, hash_elem);
   const struct page *b = hash_entry (b_, struct page, hash_elem);
@@ -407,12 +411,13 @@ bool page_less (const struct hash_elem *a_,
   return a->addr < b->addr;
 }
 
-struct page *
-page_lookup (const void *address) {
-  struct page p;
-  struct hash_elem *e;
+// 원래는 p.addr이 아니라 &pages였음
+// struct page *
+// page_lookup (const void *address) {
+//   struct page p;
+//   struct hash_elem *e;
 
-  p.addr = address;
-  e = hash_find (&pages, &p.hash_elem);
-  return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
-}
+//   p.addr = address;
+//   e = hash_find (&pages, &p.hash_elem);
+//   return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
+// }

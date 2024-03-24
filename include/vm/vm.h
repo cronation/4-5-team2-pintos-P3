@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include "threads/palloc.h"
 
+#include "hash.h"
+
 enum vm_type {
 	/* page not initialized */
 	VM_UNINIT = 0,
@@ -36,6 +38,12 @@ struct thread;
 
 #define VM_TYPE(type) ((type) & 7)
 
+
+struct frame {
+  void *kva;
+  struct page *page;
+};
+
 /* The representation of "page".
  * This is kind of "parent class", which has four "child class"es, which are
  * uninit_page, file_page, anon_page, and page cache (project4).
@@ -45,8 +53,8 @@ struct page {
 	void *va;              /* Address in terms of user space */
 	struct frame *frame;   /* Back reference for frame */
 
-	struct hash_elem hash_elem;
-	void * addr;
+	struct hash_elem hash_elem; /* Hash table element. */
+	void * addr;  /* Virtual address. */
 
 	/* Your implementation */
 
@@ -60,12 +68,6 @@ struct page {
 		struct page_cache page_cache;
 #endif
 	};
-};
-
-/* The representation of "frame" */
-struct frame {
-	void *kva;
-	struct page *page;
 };
 
 /* The function table for page operations.
@@ -106,9 +108,11 @@ struct supplemental_page_table {
 	size_t swap_slot;
 
 	/* hash table element */
-	struct hash_elem elem;
-	struct hash * hash;
+	struct hash * spt_hash;
 };
+
+//추가
+struct list frame_table;
 
 #include "threads/thread.h"
 void supplemental_page_table_init (struct supplemental_page_table *spt);

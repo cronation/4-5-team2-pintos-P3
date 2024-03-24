@@ -132,8 +132,6 @@ struct thread {
   struct semaphore wait_sema;         //* WAIT
   struct semaphore exit_sema;         //* WAIT
 
-  uint32_t * pagedir;
-
 #endif
 #ifdef VM
   /* Table for whole virtual memory owned by thread. */
