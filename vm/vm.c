@@ -20,6 +20,9 @@ vm_init (void) {
 	/* TODO: Your code goes here. */
 }
 
+// int get_offset(void *kva);
+// void set_offset(void *va, int offset);
+
 /* Get the type of the page. This function is useful if you want to know the
  * type of the page after it will be initialized.
  * This function is fully implemented now. */
@@ -55,8 +58,15 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
-
+		struct page *page = (struct page *)calloc(1,sizeof(struct page));
+		if (!page)
+			return false;
+		if (type == VM_ANON)
+			uninit_new(page,upage,init,type,aux,anon_initializer);
+		if (type == VM_FILE)
+			uninit_new(page,upage,init,type,aux,file_backed_initializer);
 		/* TODO: Insert the page into the spt. */
+		spt_insert_page(spt,page);
 	}
 err:
 	return false;
@@ -127,9 +137,10 @@ vm_get_frame (void) {
 	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
 	
-	frame = palloc_get_page(PAL_USER);
+	frame = (struct frame *)calloc(1,sizeof(struct frame));
+	frame->kva = palloc_get_page(PAL_USER);
 
-	if (!frame)
+	if (!frame->kva)
 		PANIC("todo");   //swap out 해야 됨.
 	
 	ASSERT (frame != NULL);
@@ -155,6 +166,9 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
+	page = spt_find_page (spt, addr);
+	if (page == NULL)
+		return false;
 
 	return vm_do_claim_page (page);
 }
@@ -169,13 +183,13 @@ vm_dealloc_page (struct page *page) {
 
 /* Claim the page that allocate on VA. */
 bool
-vm_claim_page (void *va UNUSED) {
+vm_claim_page (void *va) {
 	struct page *page = NULL;
 	struct thread *curr = thread_current();
 	/* TODO: Fill this function */
-
+	page = (struct page *)calloc(1,sizeof(struct page));
+	page->va = va;
 	
-
 	return vm_do_claim_page (page);
 }
 
@@ -189,11 +203,17 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-	frame->kva = page->va;
-	// pml4_set_page(&curr->pml4,va,)
+	frame->kva = (int64_t)frame->kva | ((int64_t)page->va & 0xfff);
 
 	return swap_in (page, frame->kva);
 }
+
+// int get_offset(void *kva){
+// 	return (int)kva & 0xfff;
+// }
+// void set_offset(void *va, int offset){
+// 	va = (int) va | offset;
+// }
 
 /* Initialize new supplemental page table */
 void
