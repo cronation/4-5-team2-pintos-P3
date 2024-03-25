@@ -38,6 +38,12 @@ struct thread;
 
 #define VM_TYPE(type) ((type) & 7)
 
+struct lzload_arg {
+	struct file * file;
+	off_t ofs;
+	uint32_t read_bytes;
+	uint32_t zero_bytes;
+};
 
 struct frame {
   void *kva;
@@ -55,6 +61,7 @@ struct page {
 
 	struct hash_elem hash_elem; /* Hash table element. */
 	void * addr;  /* Virtual address. */
+	bool writable;
 
 	/* Your implementation */
 

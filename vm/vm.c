@@ -58,9 +58,27 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
-		
-		
+
+		struct page * page = (struct page *)calloc(page,1); //일회용 페이지이고, 없애지 못한 더미 자료들은 쓸모가 없기 때문에 malloc 대신 calloc 선언
+
+		bool (*page_initializer)(struct page *, enum vm_type, void *); // uninit struct 안에 이미 있는 initalizer이며, 그대로 가져다 쓰면 됨. 이후 각 type에 맞게 initalizer가 초기화된다.
+
+		switch(VM_TYPE(type)){
+			case VM_ANON:
+				page_initializer = anon_initializer;
+				break;
+			case VM_FILE:
+				page_initializer = file_backed_initializer;
+				break;
+		}
+
+		uninit_new(page, upage, init, type, aux, page_initializer); // uninit 타입으로 초기화. 깃북을 보면 기본값이 uninit으로 설정되어야 한다는 것을 알 수 있음.
+
+		page->writable = writable;
+		// uninit_new함수가 페이지 자체를 초기화시키기 때문에 uninit_new 이후에 수정해야 수정사항이 반양됨.
+
 		/* TODO: Insert the page into the spt. */
+		return spt_insert_page(spt,page);
 	}
 err:
 	return false;
@@ -88,12 +106,10 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
 	int succ = false;
 	/* TODO: Fill this function. */
-
 	if (hash_insert(&spt->spt_hash , &page->hash_elem) != NULL){	succ = true;
 	}else{
 		succ = false;
 	}
-	
 	return succ;
 }
 
@@ -128,12 +144,13 @@ vm_evict_frame (void) {
  * space.*/
 static struct frame *
 vm_get_frame (void) {
-	struct frame *frame = NULL;
+	struct frame * frame = NULL;
 	/* TODO: Fill this function. */
-	// 추가
-	palloc_get_page(PAL_USER);
-	// 나중에 해당 함수도 구현 요망
-	vm_evict_frame();
+	if (palloc_get_page(PAL_USER) != NULL){
+		frame = palloc_get_page(PAL_USER);
+	}else{
+		PANIC ("todo");
+	}
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
@@ -177,6 +194,9 @@ vm_claim_page (void *va UNUSED) {
 	/* TODO: Fill this function */
 	// 추가
 	page = spt_find_page(thread_current ()->spt , va);
+	if (page == NULL){
+		return false;
+	}
 
 	return vm_do_claim_page (page);
 }
@@ -192,8 +212,7 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-	//추가
-	
+	pml4_set_page(thread_current()->pml4, page->va, frame->kva,page->writable);
 
 	return swap_in (page, frame->kva);
 }
