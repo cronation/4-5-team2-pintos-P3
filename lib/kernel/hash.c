@@ -276,7 +276,14 @@ uint64_t
 hash_int (int i) {
 	return hash_bytes (&i, sizeof i);
 }
-
+
+void hash_table_copy(struct hash_elem *e, void *aux)
+{
+	struct supplemental_page_table *spt = aux;
+	
+	hash_insert(&spt->spt_hash, e);
+}
+
 /* Returns the bucket in H that E belongs in. */
 static struct list *
 find_bucket (struct hash *h, struct hash_elem *e) {

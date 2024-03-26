@@ -16,6 +16,7 @@
         "init.h": "c",
         "bitmap.h": "c",
         "vm.h": "c",
-        "hash.h": "c"
+        "hash.h": "c",
+        "anon.h": "c"
     }
 }

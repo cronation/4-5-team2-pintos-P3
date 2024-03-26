@@ -52,6 +52,7 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 
 	struct supplemental_page_table *spt = &thread_current ()->spt;
+	type = (enum vm_type)VM_TYPE(type);
 
 	/* Check wheter the upage is already occupied or not. */
 	if (spt_find_page (spt, upage) == NULL) {
@@ -61,12 +62,21 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		struct page *page = (struct page *)calloc(1,sizeof(struct page));
 		if (!page)
 			return false;
-		if (type == VM_ANON)
-			uninit_new(page,upage,init,type,aux,anon_initializer);
-		if (type == VM_FILE)
-			uninit_new(page,upage,init,type,aux,file_backed_initializer);
+
+		switch (VM_TYPE(type)){
+
+			case VM_ANON:
+				uninit_new(page,upage,init,type,aux,anon_initializer);
+				break;
+			case VM_FILE:
+				uninit_new(page,upage,init,type,aux,file_backed_initializer);
+				break;
+		}
+
 		/* TODO: Insert the page into the spt. */
-		spt_insert_page(spt,page);
+		page->writable = writable;
+		return spt_insert_page(spt,page);
+
 	}
 err:
 	return false;
@@ -81,7 +91,7 @@ spt_find_page (struct supplemental_page_table *spt, void *va) {
 	page->va = va;
 	e = hash_find (spt->spt_hash,&page->hash_elem); 
 
-	return e != NULL ? hash_entry (e, struct page, hash_elem) : NULL;
+	return e != NULL ? hash_entry(e, struct page, hash_elem) : NULL;
 }
 
 
@@ -122,10 +132,10 @@ vm_get_victim (void) {
  * Return NULL on error.*/
 static struct frame *
 vm_evict_frame (void) {
-	struct frame *victim UNUSED = vm_get_victim ();
+	struct frame *victim  = vm_get_victim ();
 	/* TODO: swap out the victim and return the evicted frame. */
 
-	return NULL;
+	return victim;
 }
 
 /* palloc() and get frame. If there is no available page, evict the page
@@ -138,13 +148,17 @@ vm_get_frame (void) {
 	/* TODO: Fill this function. */
 	
 	frame = (struct frame *)calloc(1,sizeof(struct frame));
-	frame->kva = palloc_get_page(PAL_USER);
-
-	if (!frame->kva)
-		PANIC("todo");   //swap out 해야 됨.
 	
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
+	
+	frame->kva = palloc_get_page(PAL_USER);
+
+	//swap out 구현 해야 함
+	if (!frame->kva){
+		PANIC("to do");
+	}
+		
 	return frame;
 }
 
@@ -187,9 +201,12 @@ vm_claim_page (void *va) {
 	struct page *page = NULL;
 	struct thread *curr = thread_current();
 	/* TODO: Fill this function */
-	page = (struct page *)calloc(1,sizeof(struct page));
-	page->va = va;
-	
+	// page = (struct page *)calloc(1,sizeof(struct page));
+	// page->va = va;
+	page = spt_find_page(&curr->spt,va);
+	if(page == NULL)
+		return false;
+
 	return vm_do_claim_page (page);
 }
 
@@ -203,7 +220,9 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-	frame->kva = (int64_t)frame->kva | ((int64_t)page->va & 0xfff);
+	// frame->kva = (int64_t)frame->kva | ((int64_t)page->va & 0xfff);
+	struct thread *curr = thread_current();
+	pml4_set_page(curr->pml4,page->va,frame->kva,page->writable);
 
 	return swap_in (page, frame->kva);
 }
@@ -225,8 +244,17 @@ supplemental_page_table_init (struct supplemental_page_table *spt) {
 
 /* Copy supplemental page table from src to dst */
 bool
-supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
-		struct supplemental_page_table *src UNUSED) {
+supplemental_page_table_copy (struct supplemental_page_table *dst,
+		struct supplemental_page_table *src) {
+
+		dst->spt_hash->hash = src->spt_hash->hash;
+		dst->spt_hash->less = src->spt_hash->less;
+
+		src->spt_hash->aux = &dst->spt_hash;
+
+		hash_apply(&src->spt_hash,hash_table_copy);
+
+
 }
 
 /* Free the resource hold by the supplemental page table */
