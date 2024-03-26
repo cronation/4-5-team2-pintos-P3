@@ -9,5 +9,6 @@ tests/threads/priority-sema.o: ../../tests/threads/priority-sema.c \
  ../../include/threads/thread.h ../../include/threads/interrupt.h \
  ../../include/vm/vm.h ../../include/threads/palloc.h \
  ../../include/vm/uninit.h ../../include/vm/anon.h \
- ../../include/vm/file.h ../../include/devices/timer.h \
+ ../../include/vm/file.h ../../include/lib/kernel/hash.h \
+ ../../include/lib/kernel/list.h ../../include/devices/timer.h \
  ../../include/lib/round.h

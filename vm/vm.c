@@ -89,8 +89,10 @@ spt_find_page (struct supplemental_page_table *spt, void *va) {
 	/* TODO: Fill this function. */
 	struct hash_elem *e;
 	page = malloc(sizeof(struct page));
-	page->va = va;
-	e = hash_find (&spt,&page->spt_elem); 
+	page->va = pg_round_down(va);
+	// va = 400c7f로 들어오는데 이건 가상주소의 실제주소
+	// pg_round_down 으로 그 주소가 속한 페이지의 주소로 바꿔야함
+	e = hash_find (&spt->spt_hash,&page->spt_elem);
 
 	return e != NULL ? hash_entry(e, struct page, spt_elem) : NULL;
 }
@@ -102,13 +104,13 @@ spt_insert_page (struct supplemental_page_table *spt,
 		struct page *page) {
 	/* TODO: Fill this function. */
 	
-	return hash_insert(&spt, &page->spt_elem) == NULL ? true : false;
+	return hash_insert(&spt->spt_hash, &page->spt_elem) == NULL ? true : false;
 }
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 	vm_dealloc_page (page);
-	hash_delete(&spt,&page->spt_elem);
+	hash_delete(&spt->spt_hash,&page->spt_elem);
 
 	return true;
 }
@@ -177,8 +179,8 @@ vm_handle_wp (struct page *page UNUSED) {
  *  또 not_present가 true 임에도 불구하고 read_only_pate에 write 요청 할수 있으므로 그것도
  *  예외 처리*/
 bool
-vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
-		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
+vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr,
+		bool user UNUSED, bool write, bool not_present) {
 	struct thread *curr = thread_current();
 	struct supplemental_page_table *spt = &curr->spt;
 	struct page *page = NULL;
@@ -186,24 +188,35 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Your code goes here */
 	// 예외 처리 1
 
-	if (addr == NULL)
+	// printf("==========vm_try_handle_fault START ==========\n");
+	if (addr == NULL){
 		return false;
+	}
 
-	if (is_kernel_vaddr(addr))
-		return false;
+	if (is_kernel_vaddr(addr)){
+		// printf("addr : %x\n", addr);
+	 	return false;
+	}
+
 
 
 	if(not_present)
 	{
 		page = spt_find_page(spt,addr);
-		if(page == NULL)
+		if(page == NULL){
+			// printf("11\n");
 			return false;
-		if(write == 1 && page->writable == 0) // read_only page 에 write 요청 한 경우
+		}
+		if(write == 1 && page->writable == 0)
+		{
+			// printf("22\n");
 			return false;
-		
-		return vm_do_claim_page(page);	
-	}
+		} // read_only page 에 write 요청 한 경우
 
+		// printf("33\n");
+		return vm_do_claim_page(page);
+	}
+	// printf("44\n");
 	return false;
 }
 
@@ -234,6 +247,8 @@ vm_claim_page (void *va) {
 static bool
 vm_do_claim_page (struct page *page) {
 	struct frame *frame = vm_get_frame ();
+
+	// printf("==========vm_do_claim_page==========\n");
 
 	/* Set links */
 	frame->page = page;

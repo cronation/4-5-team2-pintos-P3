@@ -6,6 +6,7 @@ threads/thread.o: ../../threads/thread.c ../../include/threads/thread.h \
  ../../include/threads/synch.h ../../include/vm/vm.h \
  ../../include/threads/palloc.h ../../include/vm/uninit.h \
  ../../include/vm/anon.h ../../include/vm/file.h \
+ ../../include/lib/kernel/hash.h ../../include/lib/kernel/list.h \
  ../../include/lib/random.h ../../include/lib/stdio.h \
  ../../include/lib/stdarg.h ../../include/lib/kernel/stdio.h \
  ../../include/lib/string.h ../../include/threads/flags.h \

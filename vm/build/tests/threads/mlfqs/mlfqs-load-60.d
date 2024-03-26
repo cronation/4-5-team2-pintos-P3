@@ -10,4 +10,5 @@ tests/threads/mlfqs/mlfqs-load-60.o: \
  ../../include/threads/interrupt.h ../../include/vm/vm.h \
  ../../include/threads/palloc.h ../../include/vm/uninit.h \
  ../../include/vm/anon.h ../../include/vm/file.h \
+ ../../include/lib/kernel/hash.h ../../include/lib/kernel/list.h \
  ../../include/devices/timer.h ../../include/lib/round.h
