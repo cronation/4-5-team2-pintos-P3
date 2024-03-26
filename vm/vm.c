@@ -86,12 +86,13 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt, void *va) {
 	struct page *page = NULL;
-	struct hash_elem *e;
 	/* TODO: Fill this function. */
+	struct hash_elem *e;
+	page = malloc(sizeof(struct page));
 	page->va = va;
-	e = hash_find (spt->spt_hash,&page->hash_elem); 
+	e = hash_find (&spt,&page->spt_elem); 
 
-	return e != NULL ? hash_entry(e, struct page, hash_elem) : NULL;
+	return e != NULL ? hash_entry(e, struct page, spt_elem) : NULL;
 }
 
 
@@ -99,22 +100,15 @@ spt_find_page (struct supplemental_page_table *spt, void *va) {
 bool
 spt_insert_page (struct supplemental_page_table *spt,
 		struct page *page) {
-	int succ = false;
 	/* TODO: Fill this function. */
 	
-	struct hash_elem *e;
-	e = hash_insert(spt->spt_hash,&page->hash_elem);
-	
-	if (e != NULL)
-		succ = true;
-
-	return succ;
+	return hash_insert(&spt, &page->spt_elem) == NULL ? true : false;
 }
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 	vm_dealloc_page (page);
-	hash_delete(spt->spt_hash,&page->hash_elem);
+	hash_delete(&spt,&page->spt_elem);
 
 	return true;
 }
@@ -147,17 +141,18 @@ vm_get_frame (void) {
 	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
 	
-	frame = (struct frame *)calloc(1,sizeof(struct frame));
-	
-	ASSERT (frame != NULL);
-	ASSERT (frame->page == NULL);
-	
-	frame->kva = palloc_get_page(PAL_USER);
 
+	frame = (struct frame *)calloc(1,sizeof(struct frame));
+	frame->kva = palloc_get_page(PAL_USER);
+	
 	//swap out 구현 해야 함
 	if (!frame->kva){
 		PANIC("to do");
 	}
+
+	ASSERT (frame != NULL);
+	ASSERT (frame->page == NULL);
+	
 		
 	return frame;
 }
@@ -173,18 +168,43 @@ vm_handle_wp (struct page *page UNUSED) {
 }
 
 /* Return true on success */
+/* spt_find_page를 통해 SPT를 참조하여 faulted 주소에 해당하는 페이지 구조체를
+ * 해결하도록 해야함. 인자로 f, fault_addr, user, write, not_present 를 받음.
+ * f = intr_frame / fault_addr = fault 주소 / write = write 여부 / not_present = 물리프레임이 있는지? 
+ *  not_present = true 이면 : 할당된 물리 프레임이 존재하지 않아서 발생한 예외
+ *  not_present = false 이면 : 물리 프레임이 할당 되었지만 page_fault가 일어난 것이므로
+ *  read_only page 에 write 를 한 경우가 되니 예외 처리로 return false 하면 됨
+ *  또 not_present가 true 임에도 불구하고 read_only_pate에 write 요청 할수 있으므로 그것도
+ *  예외 처리*/
 bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
-	struct supplemental_page_table *spt UNUSED = &thread_current ()->spt;
+	struct thread *curr = thread_current();
+	struct supplemental_page_table *spt = &curr->spt;
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
-	page = spt_find_page (spt, addr);
-	if (page == NULL)
+	// 예외 처리 1
+
+	if (addr == NULL)
 		return false;
 
-	return vm_do_claim_page (page);
+	if (is_kernel_vaddr(addr))
+		return false;
+
+
+	if(not_present)
+	{
+		page = spt_find_page(spt,addr);
+		if(page == NULL)
+			return false;
+		if(write == 1 && page->writable == 0) // read_only page 에 write 요청 한 경우
+			return false;
+		
+		return vm_do_claim_page(page);	
+	}
+
+	return false;
 }
 
 /* Free the page.
@@ -220,40 +240,23 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-	// frame->kva = (int64_t)frame->kva | ((int64_t)page->va & 0xfff);
 	struct thread *curr = thread_current();
 	pml4_set_page(curr->pml4,page->va,frame->kva,page->writable);
 
 	return swap_in (page, frame->kva);
 }
 
-// int get_offset(void *kva){
-// 	return (int)kva & 0xfff;
-// }
-// void set_offset(void *va, int offset){
-// 	va = (int) va | offset;
-// }
 
-/* Initialize new supplemental page table */
 void
 supplemental_page_table_init (struct supplemental_page_table *spt) {
 	
-	hash_init(&spt->spt_hash, page_hash, page_less, NULL);
-		
+	hash_init(&spt->spt_hash, page_hash, page_less, NULL);		
 }
 
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst,
 		struct supplemental_page_table *src) {
-
-		dst->spt_hash->hash = src->spt_hash->hash;
-		dst->spt_hash->less = src->spt_hash->less;
-
-		src->spt_hash->aux = &dst->spt_hash;
-
-		hash_apply(&src->spt_hash,hash_table_copy);
-
 
 }
 
