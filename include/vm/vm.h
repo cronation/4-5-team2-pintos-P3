@@ -38,13 +38,6 @@ struct thread;
 
 #define VM_TYPE(type) ((type) & 7)
 
-struct lzload_arg {
-	struct file * file;
-	off_t ofs;
-	uint32_t read_bytes;
-	uint32_t zero_bytes;
-};
-
 struct frame {
   void *kva;
   struct page *page;
@@ -75,6 +68,13 @@ struct page {
 		struct page_cache page_cache;
 #endif
 	};
+};
+
+struct lzload_arg {
+	struct file * file;
+	off_t ofs;
+	uint32_t read_bytes;
+	uint32_t zero_bytes;
 };
 
 /* The function table for page operations.
@@ -142,5 +142,6 @@ bool vm_alloc_page_with_initializer (enum vm_type type, void *upage,
 void vm_dealloc_page (struct page *page);
 bool vm_claim_page (void *va);
 enum vm_type page_get_type (struct page *page);
+void print_spt(void);
 
 #endif  /* VM_VM_H */
