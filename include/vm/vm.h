@@ -41,6 +41,8 @@ struct thread;
 struct frame {
   void *kva;
   struct page *page;
+  struct list_elem frame_elem;
+  int count_page;
 };
 
 /* The representation of "page".
@@ -53,6 +55,7 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	struct hash_elem hash_elem; /* Hash table element. */
+	struct list_elem list_elem;
 	void * addr;  /* Virtual address. */
 	bool writable;
 

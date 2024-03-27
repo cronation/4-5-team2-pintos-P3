@@ -781,13 +781,17 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 	// printf("[[TRG]]\n LOAD_SEGMENT\n");
 
 	while (read_bytes > 0 || zero_bytes > 0) {
+		printf("[[TRG]]\nYOU'RE IN LOAD_SEGMENT\n");
+		printf("NOW IN WHILE\n");
 		/* Do calculate how to fill this page.
 		 * We will read PAGE_READ_BYTES bytes from FILE
 		 * and zero the final PAGE_ZERO_BYTES bytes. */
 
 		// printf("[[TRG]]\n IN_WHILE_AREA\n");
+		printf("BEFORE PGSIZE : %d , read_bytes : %d , zero_bytes : %d\n", PGSIZE, read_bytes, zero_bytes);
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
+		printf("AFTER PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
 		struct lzload_arg * lzl = (struct lzload_arg *)malloc(sizeof(struct lzload_arg));
@@ -799,7 +803,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, lzl)){
-			printf("[[TRG]]\n WITH_INITIALIZER_TRUE??\n");
+			// printf("[[TRG]]\n WITH_INITIALIZER_TRUE??\n");
 			// 여기까지 출력됨
 			return false;
 			}
@@ -809,9 +813,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
 		ofs += page_read_bytes; // 이 부분 추가
-		printf("[[TRG]]\n LOAD END\n");
-		// print_spt();
+		printf("[[TRG]]\n WHILE END\n");
 	}
+	printf("[[TRG]]\n LOAD_SEGMENT END\n");
 	return true;
 }
 

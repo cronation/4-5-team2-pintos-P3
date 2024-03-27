@@ -139,7 +139,7 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 	/* Check wheter the upage is already occupied or not. */
 	// upage가 이미 사용중 or 안  사용중
 	if (spt_find_page (spt, upage) == NULL) {
-		printf("[[TRG]]\n SPT_FIND_PAGE\n");
+		printf("[[TRG]]\n VM_ALLOC_PAGE_IN\n SPT_FIND_PAGE\n");
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
@@ -165,7 +165,7 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		// uninit_new함수가 페이지 자체를 초기화시키기 때문에 uninit_new 이후에 수정해야 수정사항이 반양됨.
 
 		/* TODO: Insert the page into the spt. */
-		printf("[[TRG]]\n INSERT_PAGE_COMPLETE\n");
+		printf("[[TRG]]\nVM_ALLOC_PAGE_IN\nINSERT_PAGE_COMPLETE\n");
 		return spt_insert_page(spt,page);
 	}
 err:
@@ -176,17 +176,19 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 	// 가상의 page만들어줌. 이 안에 va 넣을 예정
-	// struct page * page = NULL;
+	struct page * page = NULL;
 	struct page n_page;
 	// struct page n_page;
 	// va를 넣어줌. 원본 훼손을 막기 위해서 이 작업을 함.
-	n_page.va = pg_round_down(va);
+	n_page.va = va;
 	/* TODO: Fill this function. */
 	struct hash_elem * h_elem = hash_find(&spt->spt_hash , &n_page.hash_elem);
 
-	struct page * answer = hash_entry(h_elem, struct page, hash_elem);
+	if (h_elem == NULL) return NULL;
 
-	return answer;
+	page = hash_entry(h_elem, struct page, hash_elem);
+	printf("[[TRG]]\n FIND_PAGE_COMPLETE\n");
+	return page;
 }
 
 /* Insert PAGE into spt with validation. */
@@ -195,10 +197,10 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
 	int succ = false;
 	/* TODO: Fill this function. */
-	hash_insert(&spt->spt_hash , &page->hash_elem);
 
 	if (hash_insert(&spt->spt_hash, &page->hash_elem) == NULL)
 		succ = true;
+		printf("[[TRG]]\n HASH_INSERT_TRUE\n");
 	return succ;
 }
 
@@ -267,6 +269,8 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
+
+	print_spt();
 	if (addr == NULL)
         return false;
 
