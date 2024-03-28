@@ -85,6 +85,13 @@ hash_destroy (struct hash *h, hash_action_func *destructor) {
 	free (h->buckets);
 }
 
+void hash_page_destroy(struct hash_elem *e, void *aux)
+{
+    struct page *page = hash_entry(e, struct page, spt_elem);
+    destroy(page);
+    free(page);
+}
+
 /* Inserts NEW into hash table H and returns a null pointer, if
    no equal element is already in the table.
    If an equal element is already in the table, returns it
@@ -203,8 +210,10 @@ hash_first (struct hash_iterator *i, struct hash *h) {
 struct hash_elem *
 hash_next (struct hash_iterator *i) {
 	ASSERT (i != NULL);
+	
 
 	i->elem = list_elem_to_hash_elem (list_next (&i->elem->list_elem));
+
 	while (i->elem == list_elem_to_hash_elem (list_end (i->bucket))) {
 		if (++i->bucket >= i->hash->buckets + i->hash->bucket_cnt) {
 			i->elem = NULL;

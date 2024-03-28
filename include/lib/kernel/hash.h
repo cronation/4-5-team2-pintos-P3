@@ -26,7 +26,7 @@
 #include "list.h"
 
 /* Hash element. */
-struct hash_elem {
+struct          hash_elem {
 	struct list_elem list_elem;
 };
 
@@ -103,6 +103,7 @@ bool page_less (const struct hash_elem *a_,
 
 
 void hash_table_copy (struct hash_elem *e, void *aux);
+void hash_page_destroy(struct hash_elem *e, void *aux);
 
 
 #endif /* lib/kernel/hash.h */

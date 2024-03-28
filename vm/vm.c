@@ -92,7 +92,7 @@ spt_find_page (struct supplemental_page_table *spt, void *va) {
 	page->va = pg_round_down(va);
 	// va = 400c7f로 들어오는데 이건 가상주소의 실제주소
 	// pg_round_down 으로 그 주소가 속한 페이지의 주소로 바꿔야함
-	e = hash_find (&spt->spt_hash,&page->spt_elem);
+	e = hash_find (spt->spt_hash,&page->spt_elem);
 
 	return e != NULL ? hash_entry(e, struct page, spt_elem) : NULL;
 }
@@ -104,13 +104,13 @@ spt_insert_page (struct supplemental_page_table *spt,
 		struct page *page) {
 	/* TODO: Fill this function. */
 	
-	return hash_insert(&spt->spt_hash, &page->spt_elem) == NULL ? true : false;
+	return hash_insert(spt->spt_hash, &page->spt_elem) == NULL ? true : false;
 }
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
 	vm_dealloc_page (page);
-	hash_delete(&spt->spt_hash,&page->spt_elem);
+	hash_delete(spt->spt_hash,&page->spt_elem);
 
 	return true;
 }
@@ -199,7 +199,6 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr,
 	}
 
 
-
 	if(not_present)
 	{
 		page = spt_find_page(spt,addr);
@@ -264,15 +263,45 @@ vm_do_claim_page (struct page *page) {
 
 void
 supplemental_page_table_init (struct supplemental_page_table *spt) {
-	
-	hash_init(&spt->spt_hash, page_hash, page_less, NULL);		
+
+	spt->spt_hash = (struct hash *)malloc(sizeof(struct hash));
+	hash_init(spt->spt_hash, page_hash, page_less, NULL);	
 }
 
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst,
 		struct supplemental_page_table *src) {
+			/* src의 spt를 반복하면서 dst의 spt의 엔트리의 정확한 복사본을 만드세요
+			 * 초기화되지않은(uninit) 페이지를 할당하고 그것들을 바로 요청할 필요가 있을 것이다.*/
+			struct hash_iterator i;
 
+			hash_first(&i,src->spt_hash);
+			while (hash_next(&i))
+			{
+				struct page *src_page = hash_entry(hash_cur(&i), struct page, spt_elem);
+				enum vm_type type = src_page->operations->type;
+				void *va = src_page->va;
+				bool writable = src_page->writable;
+
+				// type 이 UNINIT일 때 src에서 그대로 복사해서 init
+				if (type == VM_UNINIT)
+				{
+					vm_initializer *init = src_page->uninit.init;
+					void *aux = src_page->uninit.aux;
+					vm_alloc_page_with_initializer(type,va,writable,init,aux);
+				}
+
+				// 그 외에는 그냥 타입에 맞게 init 하고 claim_page 호출
+				vm_alloc_page(type, va, writable);
+				vm_claim_page(va);
+
+				// dst spt에서 찾아와서 kva 데이터 매핑 해주기
+				struct page *dst_page = spt_find_page(dst, va);
+       			memcpy(dst_page->frame->kva, src_page->frame->kva, PGSIZE);	
+			}
+		
+		return true;
 }
 
 /* Free the resource hold by the supplemental page table */
@@ -280,4 +309,6 @@ void
 supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
+	hash_clear(spt->spt_hash,hash_page_destroy);
+	 
 }
