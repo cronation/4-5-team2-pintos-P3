@@ -42,7 +42,7 @@ struct frame {
   void *kva;
   struct page *page;
   struct list_elem frame_elem;
-  int count_page;
+//   int count_page;
 };
 
 /* The representation of "page".
@@ -55,9 +55,11 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	struct hash_elem hash_elem; /* Hash table element. */
-	struct list_elem list_elem;
+	// struct list_elem list_elem;
 	void * addr;  /* Virtual address. */
 	bool writable;
+	// bool write_protected;
+	// uint64_t *pml4;
 
 	/* Your implementation */
 
@@ -100,25 +102,25 @@ struct page_operations {
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
 struct supplemental_page_table {
-	uint8_t type;
-	void * vaddr;
-	bool writable;
+	// uint8_t type;
+	// void * vaddr;
+	// bool writable;
 
-	bool is_loaded;
-	struct file * file;
+	// bool is_loaded;
+	// struct file * file;
 
 	/*memory mapped file에서 다룰예정*/
-	struct list_elem mmap_elem;
+	// struct list_elem mmap_elem;
 
-	size_t offset;
-	size_t read_bytes;
-	size_t zero_bytes;
+	// size_t offset;
+	// size_t read_bytes;
+	// size_t zero_bytes;
 
 	/* swapping 과제에서 다룰예정 */
-	size_t swap_slot;
+	// size_t swap_slot;
 
 	/* hash table element */
-	struct hash * spt_hash;
+	struct hash spt_hash;
 };
 
 //추가
@@ -146,5 +148,6 @@ void vm_dealloc_page (struct page *page);
 bool vm_claim_page (void *va);
 enum vm_type page_get_type (struct page *page);
 void print_spt(void);
+void clear_hash(struct hash_elem * h , void * aux);
 
 #endif  /* VM_VM_H */

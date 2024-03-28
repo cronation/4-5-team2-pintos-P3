@@ -77,12 +77,11 @@ initd (void *f_name) {
 #ifdef VM
 	supplemental_page_table_init (&thread_current ()->spt);
 #endif
+	process_init();
 
-	process_init ();
-
-	if (process_exec (f_name) < 0)
+	if (process_exec(f_name) < 0)
 		PANIC("Fail to launch initd\n");
-	NOT_REACHED ();
+	NOT_REACHED();
 }
 
 /* Clones the current process as `name`. Returns the new process's thread id, or
@@ -250,7 +249,6 @@ process_exec (void *f_name) {
 
 	/* We first kill the current context */
 	process_cleanup ();
-
   /*
   ? Project 2 : Argument Passing
   * 파일 이름에 빈 칸으로 분리되어 들어온 명령어들을 분리하고, User Stack으로 쌓아놓는 파일 실행 준비과정
@@ -266,13 +264,13 @@ process_exec (void *f_name) {
 	/* And then load the binary */
   success = load (file_name, &_if);
 
-  argument_passing (&_if, idx, argv);             //* 분리한 명령어들을 User Stack에 쌓기 위한 함수
-	/* If load failed, quit. */
-	palloc_free_page (file_name);
-	if (!success)
+	if (!success){
+		palloc_free_page (file_name);
 		return -1;
-
+	}	
   // hex_dump(_if.rsp, (void *)_if.rsp, USER_STACK - (uint64_t)_if.rsp, true);    //* user_stack printer
+    argument_passing (&_if, idx, argv);             //* 분리한 명령어들을 User Stack에 쌓기 위한 함수
+	/* If load failed, quit. */
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -289,10 +287,14 @@ argument_passing (struct intr_frame *if_, int argv_cnt, char **argv_list) {
   for (int i = 0; i < argv_cnt; i++) {
     int arg_len = strlen(argv_list[i]) + 1;
     if_->rsp -= arg_len;
+
+	printf("[[TRG]]\nif_->rsp -> %p\n", if_->rsp);
+	printf("i : %d, argv_cnt : %d, argv_list[i] : %s, arg_len : %d\n", i,argv_cnt, argv_list[i] , arg_len);
+
     memcpy((void *)if_->rsp, argv_list[i], arg_len);
+	printf("[[PASS]]\n");
     arg_addr[i] = if_->rsp;
   }
-
   /* SET word_align, 주소값 8의 배수로 맞춤 */
   if (if_->rsp % _ptr) {
     int padding = if_->rsp % _ptr;
@@ -743,8 +745,9 @@ lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
 	// printf("[[TRG]]\n LAZY_LOAD_SEGMENT_ACTIVATE\n");
+	// printf("[[TRG]]\nYOU'RE IN LAZY_LOAD_SEGMENT\n");
 
-	struct lzload_arg * lzl = (struct lzload_arg *)aux;
+	struct lzload_arg * lzl = (struct lzload_arg *)aux;	
 
 	file_seek(lzl->file , lzl->ofs); // 여기서는 이 함수를 사용해 file의 offset위치를 저장해 둔 곳으로 옮겼음.
 
@@ -754,6 +757,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	} // 파일을 읽고, 예외처리. file_read함수는 file,buffer,size를 받는데 kva가 버퍼 영역이므로 그대로 넣음.
 
 	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes); // 1페이지를 충족시키지 못 했다면 남는 데이터 0으로 초기화
+	printf("[[TRG]]\nYOU'RE GETTING OUT OF LAZY_LOAD_SEGMENT\n");
 	return true;
 }
 
@@ -782,19 +786,19 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 	while (read_bytes > 0 || zero_bytes > 0) {
 		printf("[[TRG]]\nYOU'RE IN LOAD_SEGMENT\n");
-		printf("NOW IN WHILE\n");
+		// printf("NOW YOU'RE IN WHILE\n");
 		/* Do calculate how to fill this page.
 		 * We will read PAGE_READ_BYTES bytes from FILE
 		 * and zero the final PAGE_ZERO_BYTES bytes. */
 
-		// printf("[[TRG]]\n IN_WHILE_AREA\n");
+		printf("IN_WHILE_AREA\n");
 		printf("BEFORE PGSIZE : %d , read_bytes : %d , zero_bytes : %d\n", PGSIZE, read_bytes, zero_bytes);
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
-		printf("AFTER PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
+		// printf("AFTER PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
-		struct lzload_arg * lzl = (struct lzload_arg *)malloc(sizeof(struct lzload_arg));
+		struct lzload_arg * lzl = malloc(sizeof(struct lzload_arg));
 		lzl->file = file;
 		lzl->ofs = ofs;
 		lzl->read_bytes = page_read_bytes;
@@ -803,7 +807,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, lzl)){
-			// printf("[[TRG]]\n WITH_INITIALIZER_TRUE??\n");
+			printf("[[TRG]]\nWITH_INITIALIZER_FALSE --> 이거 false되면 안 됨\n");
+			printf("BEFORE INITIALIZER FALSE -> PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
 			// 여기까지 출력됨
 			return false;
 			}
@@ -813,9 +818,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
 		ofs += page_read_bytes; // 이 부분 추가
-		printf("[[TRG]]\n WHILE END\n");
+		printf("LOAD_SEGMENT -> WHILE FINISHED \n");
+		// printf("LAST PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
 	}
-	printf("[[TRG]]\n LOAD_SEGMENT END\n");
+	printf("[[TRG]]\nYOU'RE GETTING OUT OF LOAD_SEGMENT!\n");
 	return true;
 }
 
@@ -825,15 +831,13 @@ setup_stack (struct intr_frame *if_) {
 	bool success = false;
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
 
-	printf("[[TRG]]\n IN setup_stack\n");
-	print_spt();
+	printf("[[TRG]]\nYOU'RE IN SETUP_STACK\n");
 
 	/* TODO: Map the stack on stack_bottom and claim the page immediately.
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
 	if (!vm_alloc_page_with_initializer (VM_ANON, stack_bottom , true, NULL, NULL)){
-		printf("[[TRG]]\n !vm_alloc_page_with_initializer\n");
 		return false;
 	}
 	// 새 page 만들기
@@ -841,7 +845,7 @@ setup_stack (struct intr_frame *if_) {
 	vm_claim_page(stack_bottom); // 할당 받은 페이지에 바로 물리 프레임을 매핑한다. vm_Claim_page는 bool 값을 반환함.
 	if_->rsp = USER_STACK;
 	success = true;
-	
+
 	return success;
 }
 #endif /* VM */
