@@ -56,7 +56,7 @@ struct page {
 
 	struct hash_elem hash_elem; /* Hash table element. */
 	// struct list_elem list_elem;
-	void * addr;  /* Virtual address. */
+	// void * addr;  < 이거 쓸데없음
 	bool writable;
 	// bool write_protected;
 	// uint64_t *pml4;

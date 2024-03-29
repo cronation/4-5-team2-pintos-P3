@@ -95,9 +95,11 @@ hash_insert (struct hash *h, struct hash_elem *new) {
 	struct list *bucket = find_bucket (h, new);
 	struct hash_elem *old = find_elem (h, bucket, new);
 
+	// printf("%p <- new\n\n",new);
 	if (old == NULL)
 		insert_elem (h, bucket, new);
-
+	
+	// printf("%p <- old\n\n",old);
 	rehash (h);
 
 	return old;
@@ -398,6 +400,7 @@ remove_elem (struct hash *h, struct hash_elem *e) {
 unsigned int
 page_hash (const struct hash_elem *p_, void *aux UNUSED) {
   const struct page *p = hash_entry (p_, struct page, hash_elem);
+//   printf ("%p in page_hash now\n\n", p->va);
   return hash_bytes (&p->va, sizeof p->va);
 }
 
@@ -408,7 +411,7 @@ page_less (const struct hash_elem *a_,
   const struct page *a = hash_entry (a_, struct page, hash_elem);
   const struct page *b = hash_entry (b_, struct page, hash_elem);
 
-  return a->addr < b->addr;
+  return a->va < b->va;
 }
 
 // 원래는 p.addr이 아니라 &pages였음

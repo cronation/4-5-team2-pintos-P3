@@ -288,13 +288,15 @@ argument_passing (struct intr_frame *if_, int argv_cnt, char **argv_list) {
     int arg_len = strlen(argv_list[i]) + 1;
     if_->rsp -= arg_len;
 
-	printf("[[TRG]]\nif_->rsp -> %p\n", if_->rsp);
-	printf("i : %d, argv_cnt : %d, argv_list[i] : %s, arg_len : %d\n", i,argv_cnt, argv_list[i] , arg_len);
+	// printf("[[TRG]]\nif_->rsp -> %p\n", if_->rsp);
+	// printf("i : %d, argv_cnt : %d, argv_list[i] : %s, arg_len : %d\n", i,argv_cnt, argv_list[i] , arg_len);
+	// print_spt();
 
     memcpy((void *)if_->rsp, argv_list[i], arg_len);
-	printf("[[PASS]]\n");
+	// printf("[[PASS]]\n");
     arg_addr[i] = if_->rsp;
   }
+
   /* SET word_align, 주소값 8의 배수로 맞춤 */
   if (if_->rsp % _ptr) {
     int padding = if_->rsp % _ptr;
@@ -747,7 +749,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	// printf("[[TRG]]\n LAZY_LOAD_SEGMENT_ACTIVATE\n");
 	// printf("[[TRG]]\nYOU'RE IN LAZY_LOAD_SEGMENT\n");
 
-	struct lzload_arg * lzl = (struct lzload_arg *)aux;	
+	struct lzload_arg * lzl = aux;	
 
 	file_seek(lzl->file , lzl->ofs); // 여기서는 이 함수를 사용해 file의 offset위치를 저장해 둔 곳으로 옮겼음.
 
@@ -757,7 +759,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	} // 파일을 읽고, 예외처리. file_read함수는 file,buffer,size를 받는데 kva가 버퍼 영역이므로 그대로 넣음.
 
 	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes); // 1페이지를 충족시키지 못 했다면 남는 데이터 0으로 초기화
-	printf("[[TRG]]\nYOU'RE GETTING OUT OF LAZY_LOAD_SEGMENT\n");
+	// printf("[[TRG]]\nYOU'RE GETTING OUT OF LAZY_LOAD_SEGMENT\n");
 	return true;
 }
 
@@ -785,14 +787,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 	// printf("[[TRG]]\n LOAD_SEGMENT\n");
 
 	while (read_bytes > 0 || zero_bytes > 0) {
-		printf("[[TRG]]\nYOU'RE IN LOAD_SEGMENT\n");
+		// printf("[[TRG]]\nYOU'RE IN LOAD_SEGMENT\n");
 		// printf("NOW YOU'RE IN WHILE\n");
 		/* Do calculate how to fill this page.
 		 * We will read PAGE_READ_BYTES bytes from FILE
 		 * and zero the final PAGE_ZERO_BYTES bytes. */
 
-		printf("IN_WHILE_AREA\n");
-		printf("BEFORE PGSIZE : %d , read_bytes : %d , zero_bytes : %d\n", PGSIZE, read_bytes, zero_bytes);
+		// printf("IN_WHILE_AREA\n");
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 		// printf("AFTER PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
@@ -818,10 +819,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
 		ofs += page_read_bytes; // 이 부분 추가
-		printf("LOAD_SEGMENT -> WHILE FINISHED \n");
 		// printf("LAST PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
 	}
-	printf("[[TRG]]\nYOU'RE GETTING OUT OF LOAD_SEGMENT!\n");
+	// printf("LOAD_SEGMENT_COMPLETE\n");
 	return true;
 }
 
@@ -831,7 +831,7 @@ setup_stack (struct intr_frame *if_) {
 	bool success = false;
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
 
-	printf("[[TRG]]\nYOU'RE IN SETUP_STACK\n");
+	// printf("[[TRG]]\nYOU'RE IN SETUP_STACK\n");
 
 	/* TODO: Map the stack on stack_bottom and claim the page immediately.
 	 * TODO: If success, set the rsp accordingly.

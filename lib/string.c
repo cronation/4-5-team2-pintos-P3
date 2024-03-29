@@ -7,6 +7,8 @@ void *
 memcpy (void *dst_, const void *src_, size_t size) {
 	unsigned char *dst = dst_;
 	const unsigned char *src = src_;
+	// printf("BEFORE ASSERT OF MEMCPY\n");
+	// printf("dst : %p, src : %s , size : %d\n" , dst, src, size);
 
 	ASSERT (dst != NULL || size == 0);
 	ASSERT (src != NULL || size == 0);

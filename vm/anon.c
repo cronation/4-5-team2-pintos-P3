@@ -21,7 +21,11 @@ static const struct page_operations anon_ops = {
 void
 vm_anon_init (void) {
 	/* TODO: Set up the swap_disk. */
+	// default : swap_disk = NULL
 	swap_disk = NULL;
+	// swap_disk = disk_get(1,1);
+	// size_t swap_size = disk_size(swap_disk) / Sectors_PER;
+	// swap_table = bitmap_create(swap_size);
 }
 
 /* Initialize the file mapping */
@@ -51,4 +55,7 @@ anon_swap_out (struct page *page) {
 static void
 anon_destroy (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
+
+	// struct lzload_arg * lzl = (struct lzl*)(anon_page->aux);
+	// file_close(&lzl->file);
 }

@@ -7,6 +7,11 @@ struct page;
 enum vm_type;
 
 struct file_page {
+	// vm_initializer *file;
+	// enum vm_type type;
+	// void *aux;
+	// /* Initiate the struct page and maps the pa to the va */
+	// bool (*page_initializer) (struct page *, enum vm_type, void *kva);
 };
 
 void vm_file_init (void);
