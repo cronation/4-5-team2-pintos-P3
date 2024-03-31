@@ -58,6 +58,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
   //? 인자 - %rdi, $rsi, %rdx, %r10, %r8, %r9
 
   int sys_number = f->R.rax;
+  thread_current()->rsp = f->rsp;
 
   switch (sys_number) {
 

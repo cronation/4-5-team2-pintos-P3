@@ -10,7 +10,7 @@
 #include "include/threads/thread.h"
 #include "userprog/process.h"
 
-
+#include "include/threads/interrupt.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -266,6 +266,12 @@ vm_get_frame (void) {
 /* Growing the stack. */
 static void
 vm_stack_growth (void *addr UNUSED) {
+	
+	if (vm_alloc_page(VM_ANON , pg_round_down(addr) , true))
+	{
+		vm_claim_page(pg_round_down(addr));
+		thread_current()->rsp -= PGSIZE;
+	}
 }
 
 /* Handle the fault on write_protected page */
@@ -278,13 +284,10 @@ bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
 	struct supplemental_page_table *spt UNUSED = &thread_current ()->spt;
-	struct page *page = NULL;
+	struct page * page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 	// printf("[[TRG]]\nTRY HANDLE FAULT!\n");
-	
-	vm_stack_growth(addr);
-	
 	if (addr == NULL)
         {
 			// printf("HANDLE : ADDR NULL\n");
@@ -292,23 +295,39 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		}
     if (is_kernel_vaddr(addr))
         {
-			// printf("HANDLE : IS KERNEL VADDR\n");
 			return false;
 		}
 
+	void * rsp = NULL;
+	if (is_kernel_vaddr(f->rsp)){
+		// 만약 user_stack이라면 thread에서 가져 올 필요 X
+		rsp = thread_current()->rsp;
+	}else{
+		rsp = f->rsp;
+	}
+
 	if (not_present){
-		// printf("HANDLE : IN NOT PRESENT\n");
+		if(!vm_claim_page(addr)) {
+			// 여기서 해당 주소가 유저 스택 내에 존재하는지를 체크한다.
+			// if (rsp - 8 <= addr && USER_STACK - 0x100000 <= addr && addr <= USER_STACK)
+			if (rsp - 8 <= addr) {
+				vm_stack_growth(thread_current()->rsp - PGSIZE);
+				return true;
+			}
+			return false;
+		}
+		else{
+			return true;
+		}
+
 		page = spt_find_page(spt, pg_round_down(addr));
         if (page == NULL){
-			// printf("HANDLE : PAGE NULL\n");
             return false;
 			}
         if (write == 1 && page->writable == 0){ // write 불가능한 페이지에 write 요청한 경우
-            // printf("HANDLE : WRITE FAIL\n");
 			return false;
 		}
     }
-	// printf("HANDLE : SUCCESS\n");
     return vm_do_claim_page(page);
 }
 
@@ -348,8 +367,8 @@ static bool
 vm_do_claim_page (struct page *page) {
 	// printf("YOU'RE IN VM_DO_CLAIM_PAGE\n");
 	// 물리주소 하나 가져옴
-	printf("[[TRG]]\nVM_DO_CLAIM_ACTIVATE\n");
-	print_spt();
+	// printf("[[TRG]]\nVM_DO_CLAIM_ACTIVATE\n");
+	// print_spt();
 
 	struct frame *frame = vm_get_frame();
 	struct thread *curr = thread_current();
