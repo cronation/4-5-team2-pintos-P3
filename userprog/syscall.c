@@ -318,10 +318,10 @@ close (int fd) {
   file_close(f);
 }
 
-// void *
-// mmap(void *addr, size_t length, int writable, int fd, off_t offset){
-//   return do_mmap(addr, length, writable, fd, offset);
-// }
+void *
+mmap(void *addr, size_t length, int writable, int fd, off_t offset){
+  return do_mmap(addr, length, writable, fd, offset);
+}
 
 void
 munmap(void * addr){

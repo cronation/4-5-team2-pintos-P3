@@ -199,6 +199,7 @@ spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 	page = hash_entry(h_elem, struct page, hash_elem);
 
 	// printf("[[TRG]]\nRETURN PAGE COMPLETE\n");
+	// print_spt();
 	return page;
 }
 

@@ -55,12 +55,12 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	struct hash_elem hash_elem; /* Hash table element. */
-	// struct list_elem list_elem;
-	// void * addr;  < 이거 쓸데없음
+
 	bool writable;
-	int mapped_page_count;
-	// bool write_protected;
-	// uint64_t *pml4;
+	
+	size_t offset;
+	size_t read_bytes;
+	size_t zero_bytes;
 
 	/* Your implementation */
 
