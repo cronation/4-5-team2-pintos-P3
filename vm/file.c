@@ -2,6 +2,8 @@
 
 #include "vm/vm.h"
 #include "filesys/file.h"
+#include "userprog/process.h"
+#include "include/threads/vaddr.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -49,13 +51,69 @@ file_backed_destroy (struct page *page) {
 }
 
 /* Do the mmap */
+static bool
+lazy_load_segment (struct page *page, void *aux) {
+	
+	struct lzload_arg * lzl = aux;	
+	file_seek(lzl->file , lzl->ofs);
+	if (file_read(lzl->file,page->frame->kva,lzl->read_bytes) != (int)(lzl->read_bytes)){
+		palloc_free_page(page->frame->kva);
+		return false;
+	}
+
+	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes);
+	return true;
+}
+
 void *
 do_mmap (void *addr, size_t length, int writable,
 		struct file *file, off_t offset) {
+			
+		struct file * dup_file = file_reopen(file);
 
+		void * first_addr = addr;
+		int total_page_count = NULL;
+		if (length <= PGSIZE){
+			total_page_count = 1;
+		}else if (length % PGSIZE == 0){
+			total_page_count = (length/PGSIZE);
+		}else{
+			total_page_count = (length/PGSIZE) + 1;
+		}
+
+		size_t read_bytes = length < file_length(dup_file);
+		size_t zero_bytes = PGSIZE - read_bytes % PGSIZE;
+
+		while (read_bytes > 0 || zero_bytes > 0) {
+		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
+		size_t page_zero_bytes = PGSIZE - page_read_bytes;
+
+		struct lzload_arg * lzl = malloc(sizeof(struct lzload_arg));
+		lzl->file = file;
+		lzl->ofs = offset;
+		lzl->read_bytes = page_read_bytes;
+		lzl->zero_bytes = page_zero_bytes;
+
+		if (!vm_alloc_page_with_initializer (VM_ANON, addr,
+					writable, lazy_load_segment, lzl)){
+			printf("[[TRG]]\nWITH_INITIALIZER_FALSE --> 이거 false되면 안 됨\n");
+			printf("BEFORE INITIALIZER FALSE -> PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", length, page_read_bytes, page_zero_bytes);
+			return NULL;
+			}
+
+		struct page * p = spt_find_page(&thread_current()->spt , first_addr);
+		p->mapped_page_count = total_page_count;
+
+		read_bytes -= page_read_bytes;
+		zero_bytes -= page_zero_bytes;
+		addr += length;
+		offset += page_read_bytes;
+	}
+	return first_addr;
 }
 
 /* Do the munmap */
 void
 do_munmap (void *addr) {
+	
 }

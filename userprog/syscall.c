@@ -18,7 +18,7 @@
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 /* ------------------------ */
-#include "lib/user/syscall.h"
+#include "include/vm/file.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -72,7 +72,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
       break;
 
     case SYS_FORK:          /* 2 Clone current process. */
-      f->R.rax = fork((char *)f->R.rdi, f);
+      f->R.rax = fork((char *)f->R.rdi , f);
       break;
 
     case SYS_EXEC:          /* 3 Switch current process. */
@@ -119,7 +119,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
       break;
 
     case SYS_MMAP:
-      f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+      // f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
       break;
     
     case SYS_MUNMAP:
@@ -149,7 +149,7 @@ exit (int status) {
 }
 
 static pid_t
-fork (const char *thread_name, struct intr_frame *f) {
+fork (const char *thread_name, struct intr_frame * f) {
   return process_fork(thread_name, f);
 }
 
@@ -318,9 +318,12 @@ close (int fd) {
   file_close(f);
 }
 
-void *
-mmap(void *addr, size_t length, int writable, int fd, off_t offset){
+// void *
+// mmap(void *addr, size_t length, int writable, int fd, off_t offset){
+//   return do_mmap(addr, length, writable, fd, offset);
+// }
 
-
-
+void
+munmap(void * addr){
+	return do_munmap(addr);
 }

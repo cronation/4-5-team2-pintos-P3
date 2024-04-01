@@ -5,6 +5,7 @@
 #include <debug.h>
 #include <stddef.h>
 #include "threads/thread.h"
+#include "threads/interrupt.h"
 
 /* Process identifier. */
 typedef int pid_t;
@@ -27,7 +28,7 @@ static void check_addr(const char *f_addr);
 
 static void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
-static pid_t fork (const char *thread_name, struct intr_frame *);
+static pid_t fork (const char *thread_name, struct intr_frame * f);
 static int exec (const char *file);
 static int wait (pid_t);
 static bool create (const char *file, unsigned initial_size);
@@ -41,5 +42,8 @@ static unsigned tell (int fd);
 void close (int fd);
 
 static int dup2(int oldfd, int newfd);
+
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap (void *addr);
 
 #endif /* userprog/syscall.h */

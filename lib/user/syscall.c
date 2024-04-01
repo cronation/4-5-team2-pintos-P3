@@ -195,13 +195,3 @@ int
 umount (const char *path) {
 	return syscall1 (SYS_UMOUNT, path);
 }
-
-void
-* mmap(void *addr, size_t length, int writable, int fd, off_t offset){
-	return syscall5(SYS_MMAP, addr, length, writable, fd, offset);
-}
-
-void
-munmap(void * addr){
-	return do_munmap(addr);
-}

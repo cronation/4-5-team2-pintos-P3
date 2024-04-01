@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/RAON/Desktop/DHPintos/vm",
-      "program": "c:/Users/RAON/Desktop/DHPintos/vm/build/Debug/outDebug",
+      "cwd": "c:/Users/RAON/Desktop/DHPintos/userprog",
+      "program": "c:/Users/RAON/Desktop/DHPintos/userprog/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

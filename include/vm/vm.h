@@ -58,6 +58,7 @@ struct page {
 	// struct list_elem list_elem;
 	// void * addr;  < 이거 쓸데없음
 	bool writable;
+	int mapped_page_count;
 	// bool write_protected;
 	// uint64_t *pml4;
 
