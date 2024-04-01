@@ -1,6 +1,7 @@
 #include <syscall.h>
 #include <stdint.h>
 #include "../syscall-nr.h"
+#include "lib/user/syscall.h"
 
 __attribute__((always_inline))
 static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
@@ -193,4 +194,14 @@ mount (const char *path, int chan_no, int dev_no) {
 int
 umount (const char *path) {
 	return syscall1 (SYS_UMOUNT, path);
+}
+
+void
+* mmap(void *addr, size_t length, int writable, int fd, off_t offset){
+	return syscall5(SYS_MMAP, addr, length, writable, fd, offset);
+}
+
+void
+munmap(void * addr){
+	return do_munmap(addr);
 }
