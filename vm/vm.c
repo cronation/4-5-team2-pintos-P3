@@ -48,12 +48,10 @@ static struct frame *vm_evict_frame (void);
 bool
 vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		vm_initializer *init, void *aux) {
-
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 
 	struct supplemental_page_table *spt = &thread_current ()->spt;
-	type = (enum vm_type)VM_TYPE(type);
-
+	
 	/* Check wheter the upage is already occupied or not. */
 	if (spt_find_page (spt, upage) == NULL) {
 		/* TODO: Create the page, fetch the initialier according to the VM type,
@@ -90,10 +88,12 @@ spt_find_page (struct supplemental_page_table *spt, void *va) {
 	struct hash_elem *e;
 	page = malloc(sizeof(struct page));
 	page->va = pg_round_down(va);
+
 	// va = 400c7f로 들어오는데 이건 가상주소의 실제주소
 	// pg_round_down 으로 그 주소가 속한 페이지의 주소로 바꿔야함
 	e = hash_find (spt->spt_hash,&page->spt_elem);
-
+	free(page);
+	
 	return e != NULL ? hash_entry(e, struct page, spt_elem) : NULL;
 }
 
@@ -161,7 +161,12 @@ vm_get_frame (void) {
 
 /* Growing the stack. */
 static void
-vm_stack_growth (void *addr UNUSED) {
+vm_stack_growth (void *addr) {
+
+	
+	vm_alloc_page(VM_ANON | VM_MARKER_0, pg_round_down(addr), 1);
+	vm_claim_page(addr);
+
 }
 
 /* Handle the fault on write_protected page */
@@ -186,23 +191,30 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr,
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
-	// 예외 처리 1
 
+	int limit = (1<<20);
+
+
+
+	// printf (" #### if->rsp : %p\n",f->rsp);
+	// printf(" #### addr : %p\n",addr);
 	// printf("==========vm_try_handle_fault START ==========\n");
-	if (addr == NULL){
+	if (addr == NULL  || is_kernel_vaddr(addr)){
 		return false;
-	}
-
-	if (is_kernel_vaddr(addr)){
-		// printf("addr : %x\n", addr);
-	 	return false;
 	}
 
 
 	if(not_present)
 	{
+		if (f->rsp -8 == addr && USER_STACK - (int)addr < limit)
+		{
+			// printf(" stack_growth OK \n");
+			vm_stack_growth(addr);
+		}
+
 		page = spt_find_page(spt,addr);
-		if(page == NULL){
+		if(page == NULL)
+		{
 			// printf("11\n");
 			return false;
 		}
@@ -285,16 +297,18 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 				bool writable = src_page->writable;
 
 				// type 이 UNINIT일 때 src에서 그대로 복사해서 init
-				if (type == VM_UNINIT)
+				if (VM_TYPE(type) == VM_UNINIT)
 				{
 					vm_initializer *init = src_page->uninit.init;
 					void *aux = src_page->uninit.aux;
-					vm_alloc_page_with_initializer(type,va,writable,init,aux);
+					enum vm_type type_ = src_page->uninit.type;
+					vm_alloc_page_with_initializer(type_,va,writable,init,aux);
+					continue ;
 				}
-
 				// 그 외에는 그냥 타입에 맞게 init 하고 claim_page 호출
 				vm_alloc_page(type, va, writable);
 				vm_claim_page(va);
+				
 
 				// dst spt에서 찾아와서 kva 데이터 매핑 해주기
 				struct page *dst_page = spt_find_page(dst, va);

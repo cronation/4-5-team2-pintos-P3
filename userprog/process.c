@@ -176,7 +176,7 @@ __do_fork (void *aux) {
 		goto error;
 
 	}
-	
+
 	process_activate (current);
 
 #ifdef VM
@@ -775,6 +775,7 @@ lazy_load_segment (struct page *page, void *aux) {
 	
 	// 파일의 position을 offset으로 지정
 	file_seek(f_info->file, f_info->offset);
+
 	
 	// 파일을 read_bytes 만큼 물리 프레임에 읽어들인다.
 	if (file_read (f_info->file, page->frame->kva, f_info->read_bytes) != (int) f_info->read_bytes) {
@@ -847,7 +848,7 @@ static bool
 setup_stack (struct intr_frame *if_) {
 	bool success = false;
 
-	// USER 스택은 아래로 커지니까 USER_STACK - PGSIZE 만큼 내려서 페이지 생성
+	// USER 스택은 아래로 커지니까 USER_STACK - PGSIZE 만큼 내려서 스택 생성
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
 
 

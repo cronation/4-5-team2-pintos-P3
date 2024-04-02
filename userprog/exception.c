@@ -168,6 +168,7 @@ page_fault (struct intr_frame *f) {
 			user ? "user" : "kernel",
 			null_ptr ? "NULL ptr": "validate ptr",
 			kern_base_up ? "kernel address out": "kernel address in");
+	exit(-1);
 	kill (f);
 
 }

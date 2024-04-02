@@ -16,6 +16,7 @@
 #include "lib/kernel/console.h"
 #include "lib/kernel/stdio.h"
 #include "lib/string.h"
+#include "vm/vm.h"
 
 struct lock filesys_lock;
 typedef int pid_t;
@@ -56,6 +57,7 @@ syscall_init (void) {
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f) {
+
 	switch (f->R.rax)
 	{
 	case SYS_HALT:{
@@ -149,10 +151,12 @@ check_address(const uint64_t *addr){
 	if(addr == NULL){
 		exit(-1);
 	}
-	if(!is_user_vaddr(addr)){
+	if (!is_user_vaddr(addr))
+	{
 		exit(-1);
 	}
-	if(pml4_get_page(thread_current()->pml4, addr) == NULL){
+	if (spt_find_page(&thread_current()->spt,addr) == NULL)
+	{
 		exit(-1);
 	}
 }

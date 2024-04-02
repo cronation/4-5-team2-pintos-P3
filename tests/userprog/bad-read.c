@@ -9,5 +9,6 @@ test_main (void)
 {
   msg ("Congratulations - you have successfully dereferenced NULL: %d", 
         *(int *)NULL);
+  
   fail ("should have exited with -1");
 }
