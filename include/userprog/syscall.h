@@ -43,7 +43,7 @@ void close (int fd);
 
 static int dup2(int oldfd, int newfd);
 
-// void *mmap (void *addr, size_t length, int writable, int fd, off_t offset);
-// void munmap (void *addr);
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap (void *addr);
 
 #endif /* userprog/syscall.h */

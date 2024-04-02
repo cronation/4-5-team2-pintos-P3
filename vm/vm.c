@@ -251,7 +251,7 @@ static struct frame *
 vm_get_frame (void) {
 	struct frame * frame = (struct frame *)calloc (sizeof(struct frame), 1);
 
-  frame->kva = palloc_get_page(PAL_USER | PAL_ZERO);
+  frame->kva = palloc_get_page(PAL_USER);
 
   //(palloc 실패) 만약 가상 공간이 없으면, 기존 페이지를 희생(비운 뒤) 만들어 리턴 (SWAP DISK)
   if (!frame->kva) {
@@ -378,19 +378,11 @@ vm_do_claim_page (struct page *page) {
 	frame->page = page;
 	page->frame = frame;
 
-	switch (VM_TYPE(page->operations->type))
-	{
-	case VM_UNINIT:
-		if (!install_page(page->va, frame->kva, page->writable))
-			PANIC("FAIL");
-		break;
-	case VM_ANON:
-		break;
-	case VM_FILE:
-		break;
+	if (!install_page(page->va, frame->kva, page->writable)){
+			return false;
+	}else{
+		return swap_in (page, frame->kva);
 	}
-	// kva와 pa의 매핑은 이미 되어 있음 / va와 kva매핑을 시켜주는것
-	return swap_in (page, frame->kva);
 }
 
 /* Initialize new supplemental page table */
@@ -444,13 +436,26 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 	return true;
 }
 
+void spt_dest(struct hash_elem * e, void * aux){
+	struct page * page = hash_entry(e,struct page, hash_elem);
+	free(page);
+}
+
 /* Free the resource hold by the supplemental page table */
 void
 supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
-	
 	hash_clear(&spt->spt_hash , clear_hash);
+	// struct hash_iterator i;
+	// hash_first(&i, &spt->spt_hash);
+	// while (hash_next(&i)){
+	// 	struct page * page = hash_entry(hash_cur(&i), struct page, hash_elem);
+	// 	if (page->operations->type == VM_FILE){
+	// 		do_munmap(page->va);
+	// 	}
+	// }
+	// hash_destroy(&spt->spt_hash, spt_dest);
 }
 
 void clear_hash(struct hash_elem * h , void * aux)

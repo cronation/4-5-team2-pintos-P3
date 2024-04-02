@@ -808,9 +808,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, lzl)){
-			printf("[[TRG]]\nWITH_INITIALIZER_FALSE --> 이거 false되면 안 됨\n");
-			printf("BEFORE INITIALIZER FALSE -> PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", PGSIZE, page_read_bytes, page_zero_bytes);
-			// 여기까지 출력됨
 			return false;
 			}
 

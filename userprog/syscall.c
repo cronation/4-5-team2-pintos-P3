@@ -119,7 +119,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
       break;
 
     case SYS_MMAP:
-      // f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+      f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
       break;
     
     case SYS_MUNMAP:
@@ -318,9 +318,39 @@ close (int fd) {
   file_close(f);
 }
 
+struct file *process_get_file(int fd) {
+	struct thread *curr = thread_current();
+	struct file* fd_file = curr->fd_table[fd];
+
+	if(fd_file)
+		return fd_file;
+	else
+		return	NULL;
+}
+
 void *
 mmap(void *addr, size_t length, int writable, int fd, off_t offset){
-  return do_mmap(addr, length, writable, fd, offset);
+  if (offset % PGSIZE != 0){
+		return NULL;
+	} 
+
+	if (pg_round_down(addr) != addr 
+		|| is_kernel_vaddr(addr) 
+		|| addr == NULL
+		|| (long long)length <= 0)
+		return NULL;
+	
+	if (fd < 2)
+		exit(-1);
+
+	if (spt_find_page(&thread_current()->spt, addr))
+		return NULL;
+
+	struct file * target = process_get_file(fd);
+	if (target == NULL)
+		return NULL;
+  
+  return do_mmap(addr, length, writable, target, offset);
 }
 
 void

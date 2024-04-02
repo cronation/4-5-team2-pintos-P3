@@ -2,8 +2,10 @@
 
 #include "vm/vm.h"
 #include "filesys/file.h"
-#include "userprog/process.h"
+#include "include/userprog/process.h"
+#include "devices/disk.h"
 #include "include/threads/vaddr.h"
+#include "include/threads/mmu.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -16,6 +18,18 @@ static const struct page_operations file_ops = {
 	.destroy = file_backed_destroy,
 	.type = VM_FILE,
 };
+
+static bool
+lazy_load_segment (struct page *page, void *aux) {
+	struct lzload_arg * lzl = aux;	
+	file_seek(lzl->file , lzl->ofs);
+	if (file_read(lzl->file,page->frame->kva,lzl->read_bytes) != (int)(lzl->read_bytes)){
+		palloc_free_page(page->frame->kva);
+		return false;
+	}
+	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes);
+	return true;
+}
 
 /* The initializer of file vm */
 void
@@ -50,70 +64,59 @@ file_backed_destroy (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
 }
 
-/* Do the mmap */
-static bool
-lazy_load_segment (struct page *page, void *aux) {
-	
-	struct lzload_arg * lzl = aux;	
-	file_seek(lzl->file , lzl->ofs);
-	if (file_read(lzl->file,page->frame->kva,lzl->read_bytes) != (int)(lzl->read_bytes)){
-		palloc_free_page(page->frame->kva);
-		return false;
-	}
-
-	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes);
-	return true;
-}
-
 void *
 do_mmap (void *addr, size_t length, int writable,
 		struct file *file, off_t offset) {
+
 			
-		struct file * dup_file = file_reopen(file);
+	void *f_addr = addr;
+	struct file * r_file = file_reopen(file);
+	
+	size_t read_bytes = file_length(file) < length ? file_length(file) : length;
+	size_t zero_bytes = PGSIZE - read_bytes % PGSIZE;
 
-		void * first_addr = addr;
-		int total_page_count = NULL;
-		if (length <= PGSIZE){
-			total_page_count = 1;
-		}else if (length % PGSIZE == 0){
-			total_page_count = (length/PGSIZE);
-		}else{
-			total_page_count = (length/PGSIZE) + 1;
-		}
-
-		size_t read_bytes = length < file_length(dup_file);
-		size_t zero_bytes = PGSIZE - read_bytes % PGSIZE;
-
-		while (read_bytes > 0 || zero_bytes > 0) {
+	while (read_bytes > 0 || zero_bytes > 0)
+	{
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-		struct lzload_arg * lzl = malloc(sizeof(struct lzload_arg));
-		lzl->file = file;
-		lzl->ofs = offset;
+		struct lzload_arg *lzl = (struct lzl *)malloc(sizeof(struct lzload_arg));
+		lzl->file = r_file;
 		lzl->read_bytes = page_read_bytes;
-		lzl->zero_bytes = page_zero_bytes;
+		lzl->ofs = offset;
 
-		if (!vm_alloc_page_with_initializer (VM_ANON, addr,
-					writable, lazy_load_segment, lzl)){
-			printf("[[TRG]]\nWITH_INITIALIZER_FALSE --> 이거 false되면 안 됨\n");
-			printf("BEFORE INITIALIZER FALSE -> PGSIZE : %d , page_read_bytes : %d , page_zero_bytes : %d\n", length, page_read_bytes, page_zero_bytes);
+		if (!vm_alloc_page_with_initializer(VM_FILE, addr,
+					writable, lazy_load_segment, lzl))
 			return NULL;
-			}
-
-		struct page * p = spt_find_page(&thread_current()->spt , first_addr);
-		p->mapped_page_count = total_page_count;
 
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
-		addr += length;
-		offset += page_read_bytes;
+		addr += PGSIZE;
+		offset += page_read_bytes;		
 	}
-	return first_addr;
+	printf("r_file : %p\n", r_file);
+	printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	print_spt();
+	return f_addr;
 }
 
 /* Do the munmap */
 void
 do_munmap (void *addr) {
-	
+	while (true)
+	{
+		struct page *page = spt_find_page(&thread_current()->spt, addr);
+		if (page == NULL)
+			break;
+		
+		struct lzload_arg * lzl = (struct lzload_arg *)page->uninit.aux;
+		if (pml4_is_dirty(thread_current()->pml4, page->va))
+		{
+			file_write_at(lzl->file, addr, lzl->read_bytes, lzl->ofs);
+			pml4_set_dirty (thread_current()->pml4, page->va, 0);
+		}
+
+		pml4_clear_page(thread_current()->pml4, page->va);
+		addr += PGSIZE;
+	}
 }

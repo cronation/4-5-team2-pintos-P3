@@ -42,7 +42,6 @@ struct frame {
   void *kva;
   struct page *page;
   struct list_elem frame_elem;
-//   int count_page;
 };
 
 /* The representation of "page".
@@ -57,11 +56,7 @@ struct page {
 	struct hash_elem hash_elem; /* Hash table element. */
 
 	bool writable;
-	
-	size_t offset;
-	size_t read_bytes;
-	size_t zero_bytes;
-
+	bool copy_writable;
 	/* Your implementation */
 
 	/* Per-type data are binded into the union.
@@ -103,24 +98,6 @@ struct page_operations {
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
 struct supplemental_page_table {
-	// uint8_t type;
-	// void * vaddr;
-	// bool writable;
-
-	// bool is_loaded;
-	// struct file * file;
-
-	/*memory mapped file에서 다룰예정*/
-	// struct list_elem mmap_elem;
-
-	// size_t offset;
-	// size_t read_bytes;
-	// size_t zero_bytes;
-
-	/* swapping 과제에서 다룰예정 */
-	// size_t swap_slot;
-
-	/* hash table element */
 	struct hash spt_hash;
 };
 
