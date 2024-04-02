@@ -57,7 +57,6 @@ syscall_init (void) {
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f) {
-
 	switch (f->R.rax)
 	{
 	case SYS_HALT:{
@@ -68,7 +67,9 @@ syscall_handler (struct intr_frame *f) {
 		exit((int)f->R.rdi);
 		break;
 	}
-
+	case SYS_MMAP:{
+		
+	}
 	case SYS_FORK:{
 
 		pid_t ppid = ffork ((const char *)f->R.rdi, f); //이름이 내장함수에 충돌된다고 컴파일이 울어서 고쳐줌.
@@ -136,6 +137,8 @@ syscall_handler (struct intr_frame *f) {
 		break;
 	}
 }
+
+
 
 pid_t 
 ffork (const char *thread_name, struct intr_frame *f){

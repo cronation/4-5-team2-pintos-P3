@@ -848,7 +848,7 @@ static bool
 setup_stack (struct intr_frame *if_) {
 	bool success = false;
 
-	// USER 스택은 아래로 커지니까 USER_STACK - PGSIZE 만큼 내려서 스택 생성
+	// USER 스택은 아래로 커지니까 USER_STACK - PGSIZE 만큼 내려서 페이지 생성
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
 
 
