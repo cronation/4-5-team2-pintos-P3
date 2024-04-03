@@ -99,7 +99,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
       break;
 
     case SYS_READ:          /* 9 Read from a file. */
-      f->R.rax = read(f->R.rdi, (void *)f->R.rsi, f->R.rdx);
+      f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
       break;
 
     case SYS_WRITE:         /* 10 Write to a file. */
@@ -120,6 +120,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
     case SYS_MMAP:
       f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+      // printf("rax : %p\n" , f->R.rax);
+      // print_spt();
       break;
     
     case SYS_MUNMAP:
@@ -127,8 +129,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
       break;
 
     default:
-      printf("system call!\n");
-      thread_exit ();
+      exit(-1);
   }
 }
 
@@ -239,6 +240,7 @@ read (int fd, void *buffer, unsigned length) {
   int read_size = -1;
 
   check_addr(buffer);
+
   if (fd > FD_COUNT_LIMIT || fd == STDOUT_FILENO || fd < 0)
     return read_size;
 

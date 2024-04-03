@@ -741,24 +741,30 @@ install_page (void *upage, void *kpage, bool writable) {
  * If you want to implement the function for only project 2, implement it on the
  * upper block. */
 
-static bool
+bool
 lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
 	// printf("[[TRG]]\n LAZY_LOAD_SEGMENT_ACTIVATE\n");
 	// printf("[[TRG]]\nYOU'RE IN LAZY_LOAD_SEGMENT\n");
-
-	struct lzload_arg * lzl = aux;	
+	// printf("page add : %p\n" , page);
+	struct lzload_arg * lzl = aux;
+	size_t zero = PGSIZE - lzl->read_bytes;
 
 	file_seek(lzl->file , lzl->ofs); // 여기서는 이 함수를 사용해 file의 offset위치를 저장해 둔 곳으로 옮겼음.
-
 	if (file_read(lzl->file,page->frame->kva,lzl->read_bytes) != (int)(lzl->read_bytes)){
+		printf("read fail error\n");
 		palloc_free_page(page->frame->kva);
 		return false;
 	} // 파일을 읽고, 예외처리. file_read함수는 file,buffer,size를 받는데 kva가 버퍼 영역이므로 그대로 넣음.
+	// printf("page->frame->kva = %p\n", page->frame->kva + lzl->read_bytes);
+	// printf("lzl->zero_bytes = %p\n", zero);
 
-	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes); // 1페이지를 충족시키지 못 했다면 남는 데이터 0으로 초기화
+	if (!memset(page->frame->kva + lzl->read_bytes, 0, zero)){
+		printf("memset fail error\n");
+	}
+	 // 1페이지를 충족시키지 못 했다면 남는 데이터 0으로 초기화
 	// printf("[[TRG]]\nYOU'RE GETTING OUT OF LAZY_LOAD_SEGMENT\n");
 	return true;
 }

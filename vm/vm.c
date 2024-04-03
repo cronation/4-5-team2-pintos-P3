@@ -143,10 +143,6 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 	/* Check wheter the upage is already occupied or not. */
 	// upage가 이미 사용중 or 안  사용중
 	if ((use_page = spt_find_page (spt, upage)) == NULL) {
-		// printf("[[TRG]]\nLOAD_SEGMENT -> YOU'RE IN VM_ALLOC_PAGE_WITH_INITIALIZER\nSPT_FIND_PAGE\n");
-		/* TODO: Create the page, fetch the initialier according to the VM type,
-		 * TODO: and then create "uninit" page struct by calling uninit_new. You
-		 * TODO: should modify the field after calling the uninit_new. */
 		switch(VM_TYPE(type)){
 			case VM_ANON:
 				page_initializer = anon_initializer;
@@ -169,7 +165,6 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		if (!spt_insert_page(spt,fake_page)){
 			printf("MISS INSERT PAGE\n\n");
 		}
-		// print_spt ();
 		return true;
 	}
 err:
@@ -289,9 +284,9 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 	// printf("[[TRG]]\nTRY HANDLE FAULT!\n");
+	// printf("addr : %p , user : %d , write : %d , not_present : %d\n" , addr , user, write , not_present);
 	if (addr == NULL)
         {
-			// printf("HANDLE : ADDR NULL\n");
 			return false;
 		}
     if (is_kernel_vaddr(addr))
@@ -329,7 +324,9 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 			return false;
 		}
     }
-    return vm_do_claim_page(page);
+    bool v = vm_do_claim_page(page);
+	// print_spt();
+	return v;
 }
 
 /* Free the page.

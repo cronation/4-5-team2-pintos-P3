@@ -3,9 +3,10 @@
 #include "vm/vm.h"
 #include "filesys/file.h"
 #include "include/userprog/process.h"
-#include "devices/disk.h"
 #include "include/threads/vaddr.h"
 #include "include/threads/mmu.h"
+#include "include/lib/string.h"
+#include "include/userprog/process.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -18,18 +19,6 @@ static const struct page_operations file_ops = {
 	.destroy = file_backed_destroy,
 	.type = VM_FILE,
 };
-
-static bool
-lazy_load_segment (struct page *page, void *aux) {
-	struct lzload_arg * lzl = aux;	
-	file_seek(lzl->file , lzl->ofs);
-	if (file_read(lzl->file,page->frame->kva,lzl->read_bytes) != (int)(lzl->read_bytes)){
-		palloc_free_page(page->frame->kva);
-		return false;
-	}
-	memset(page->frame->kva + lzl->read_bytes, 0, lzl->zero_bytes);
-	return true;
-}
 
 /* The initializer of file vm */
 void
@@ -66,12 +55,8 @@ file_backed_destroy (struct page *page) {
 
 void *
 do_mmap (void *addr, size_t length, int writable,
-		struct file *file, off_t offset) {
-
-			
+		struct file *file, off_t offset) {		
 	void *f_addr = addr;
-	struct file * r_file = file_reopen(file);
-	
 	size_t read_bytes = file_length(file) < length ? file_length(file) : length;
 	size_t zero_bytes = PGSIZE - read_bytes % PGSIZE;
 
@@ -80,29 +65,27 @@ do_mmap (void *addr, size_t length, int writable,
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-		struct lzload_arg *lzl = (struct lzl *)malloc(sizeof(struct lzload_arg));
-		lzl->file = r_file;
+		struct lzload_arg *lzl = (struct lzload_arg *)malloc(sizeof(struct lzload_arg));
+		lzl->file = file_reopen(file);
 		lzl->read_bytes = page_read_bytes;
 		lzl->ofs = offset;
 
 		if (!vm_alloc_page_with_initializer(VM_FILE, addr,
 					writable, lazy_load_segment, lzl))
-			return NULL;
+			return false;
 
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
 		addr += PGSIZE;
-		offset += page_read_bytes;		
+		offset += page_read_bytes;
 	}
-	printf("r_file : %p\n", r_file);
-	printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	print_spt();
 	return f_addr;
 }
 
 /* Do the munmap */
 void
 do_munmap (void *addr) {
+	// printf("unmap!\n");
 	while (true)
 	{
 		struct page *page = spt_find_page(&thread_current()->spt, addr);

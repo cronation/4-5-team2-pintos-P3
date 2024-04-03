@@ -21,6 +21,7 @@ test_main (void)
   msg ("memory is readable %d", *(int *) ACTUAL + 0x1000);
 
   munmap (map);
+  printf("test");
 
   fail ("unmapped memory is readable (%d)", *(int *) (ACTUAL + 0x1000));
   fail ("unmapped memory is readable (%d)", *(int *) (ACTUAL));

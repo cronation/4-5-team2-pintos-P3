@@ -17,9 +17,8 @@ static void argument_passing (struct intr_frame *if_, int argv_cnt, char **argv_
 static void start_process(void*file_name_);
 void process_exit(void);
 // static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
-// 		uint32_t read_bytes, uint32_t zero_bytes, bool writable);
+		// uint32_t read_bytes, uint32_t zero_bytes, bool writable);
 
-static bool
-lazy_load_segment (struct page *page, void *aux);
+bool lazy_load_segment (struct page *page, void *aux);
 
 #endif /* userprog/process.h */
