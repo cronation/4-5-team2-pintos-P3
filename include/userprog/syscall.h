@@ -46,6 +46,7 @@ unsigned tell (int fd);
 void close (int fd);
 void check_address(const uint64_t *addr);
 void *mmap(void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap(void *addr);
 
 
 

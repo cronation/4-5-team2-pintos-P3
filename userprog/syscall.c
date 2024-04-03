@@ -71,6 +71,11 @@ syscall_handler (struct intr_frame *f) {
 		f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
         break;
 	}
+
+	case SYS_MUNMAP:{
+		munmap(f->R.rdi);
+		break;
+	}
 	case SYS_FORK:{
 
 		pid_t ppid = ffork ((const char *)f->R.rdi, f); //이름이 내장함수에 충돌된다고 컴파일이 울어서 고쳐줌.
@@ -424,4 +429,9 @@ void *mmap(void *addr, size_t length, int writable, int fd, off_t offset)
         return NULL;
 
     return do_mmap(addr, length, writable, f, offset);
+}
+
+void munmap(void *addr)
+{
+    do_munmap(addr);
 }

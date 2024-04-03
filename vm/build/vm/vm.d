@@ -10,4 +10,5 @@ vm/vm.o: ../../vm/vm.c ../../include/threads/malloc.h \
  ../../include/threads/synch.h ../../include/vm/inspect.h \
  ../../include/lib/kernel/hash.h ../../include/threads/mmu.h \
  ../../include/threads/pte.h ../../include/threads/vaddr.h \
- ../../include/threads/loader.h
+ ../../include/threads/loader.h ../../include/userprog/process.h \
+ ../../include/vm/file.h

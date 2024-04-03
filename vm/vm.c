@@ -5,6 +5,8 @@
 #include "vm/inspect.h"
 #include "kernel/hash.h"
 #include "threads/mmu.h"
+#include "userprog/process.h"
+#include "include/vm/file.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -313,6 +315,25 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 					vm_alloc_page_with_initializer(type_,va,writable,init,aux);
 					continue ;
 				}
+
+				if (VM_TYPE(type) == VM_FILE)
+				{
+					struct file_info *f_info = malloc(sizeof(struct file_info));
+					f_info->file = src_page->file.file;
+					f_info->offset = src_page->file.ofs;
+					f_info->read_bytes = src_page->file.read_bytes;
+					f_info->zero_bytes = src_page->file.zero_bytes;
+
+					if(!vm_alloc_page_with_initializer(type,va,writable,NULL,f_info))
+						return false;
+
+					struct page *file_page = spt_find_page(dst,va);
+					file_backed_initializer(file_page,type,NULL);
+					file_page->frame = src_page->frame;
+					pml4_set_page(thread_current()->pml4, file_page->va, src_page->frame->kva, src_page->writable);
+					continue; 
+				}
+
 				// 그 외에는 그냥 타입에 맞게 init 하고 claim_page 호출
 				vm_alloc_page(type, va, writable);
 				vm_claim_page(va);

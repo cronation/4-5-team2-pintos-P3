@@ -49,6 +49,7 @@ struct page {
 	/* Your implementation */
 	struct hash_elem spt_elem; /* 해시테이블 elem*/
 	bool writable;
+	int page_count;
 
 	
 	/* Per-type data are binded into the union.

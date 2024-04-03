@@ -20,6 +20,7 @@ static const struct page_operations file_ops = {
 /* The initializer of file vm */
 void
 vm_file_init (void) {
+
 }
 
 /* Initialize the file backed page */
@@ -29,6 +30,13 @@ file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 	page->operations = &file_ops;
 
 	struct file_page *file_page = &page->file;
+
+	struct file_info *f_info = &page->file;
+	file_page->file = f_info->file;
+	file_page->ofs = f_info->offset;
+	file_page->read_bytes = f_info->read_bytes;
+	file_page->zero_bytes = f_info->zero_bytes;
+	
 }
 
 /* Swap in the page by read contents from the file. */
@@ -47,6 +55,14 @@ file_backed_swap_out (struct page *page) {
 static void
 file_backed_destroy (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
+
+	if (pml4_is_dirty(thread_current()->pml4,page->va))
+	{
+		file_write_at(file_page->file, page->va, file_page->read_bytes, file_page->ofs);
+		pml4_set_dirty(thread_current()->pml4, page->va,0);
+	}
+	
+	pml4_clear_page(thread_current()->pml4, page->va);
 }
 
 /* Do the mmap */
@@ -94,12 +110,23 @@ do_mmap (void *addr, size_t length, int writable,
 	}
 
 	return addr;
-
 }
 
 /* Do the munmap */
 void
 do_munmap (void *addr) {
+
+	struct supplemental_page_table *spt = &thread_current()->spt;
+    struct page *p = spt_find_page(spt, addr);
+    int count = p->page_count;
+    for (int i = 0; i < count; i++)
+    {
+        if (p)
+        	destroy(p);
+			
+        addr += PGSIZE;
+        p = spt_find_page(spt, addr);
+    }
 }
 
 

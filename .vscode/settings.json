@@ -17,6 +17,7 @@
         "bitmap.h": "c",
         "vm.h": "c",
         "hash.h": "c",
-        "anon.h": "c"
+        "anon.h": "c",
+        "vaddr.h": "c"
     }
 }
