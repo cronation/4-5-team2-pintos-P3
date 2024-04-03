@@ -163,9 +163,17 @@ vm_get_frame (void) {
 static void
 vm_stack_growth (void *addr) {
 
+	struct thread *curr = thread_current();
+	struct page *page = spt_find_page(&curr->spt,addr);
+
+	// while (!page){
+	while (spt_find_page(&curr->spt,addr) == NULL){
+		vm_alloc_page(VM_ANON | VM_MARKER_0, pg_round_down(addr), 1);
+		vm_claim_page(addr);
+		addr += PGSIZE;
+		// page = spt_find_page(&curr->spt,addr);
+	}
 	
-	vm_alloc_page(VM_ANON | VM_MARKER_0, pg_round_down(addr), 1);
-	vm_claim_page(addr);
 
 }
 
@@ -206,7 +214,7 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr,
 
 	if(not_present)
 	{
-		if (f->rsp -8 == addr && USER_STACK - (int)addr < limit)
+		if (addr == f->rsp - 8 && USER_STACK - (int)addr < limit)
 		{
 			// printf(" stack_growth OK \n");
 			vm_stack_growth(addr);

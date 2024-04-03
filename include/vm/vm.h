@@ -49,6 +49,8 @@ struct page {
 	/* Your implementation */
 	struct hash_elem spt_elem; /* 해시테이블 elem*/
 	bool writable;
+
+	
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {

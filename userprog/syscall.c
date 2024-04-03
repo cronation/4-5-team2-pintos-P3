@@ -68,7 +68,8 @@ syscall_handler (struct intr_frame *f) {
 		break;
 	}
 	case SYS_MMAP:{
-		
+		f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+        break;
 	}
 	case SYS_FORK:{
 
@@ -151,14 +152,14 @@ ffork (const char *thread_name, struct intr_frame *f){
 void
 check_address(const uint64_t *addr){
 
-	if(addr == NULL){
+
+	if(addr == NULL || !is_user_vaddr(addr)){
 		exit(-1);
 	}
-	if (!is_user_vaddr(addr))
-	{
-		exit(-1);
-	}
-	if (spt_find_page(&thread_current()->spt,addr) == NULL)
+
+	struct page *page = spt_find_page(&thread_current()->spt,addr);
+
+	if (page == NULL)
 	{
 		exit(-1);
 	}
@@ -268,6 +269,9 @@ int
 read (int fd, void *buffer, unsigned size) {
 
 	check_address(buffer);
+	struct page *page = spt_find_page(&thread_current()->spt,buffer);
+	if (!page->writable)
+		exit(-1);
 
 	lock_acquire(&filesys_lock);
 	if(fd == 0){
@@ -302,6 +306,9 @@ read (int fd, void *buffer, unsigned size) {
 int
 write (int fd, const void *buffer, unsigned size) {
 	check_address(buffer);
+	struct page *page = spt_find_page(&thread_current()->spt,buffer);
+	if (!page->writable)
+		exit(-1);
 	lock_acquire(&filesys_lock);
 
 	if(fd >64 || fd <0){
@@ -392,4 +399,29 @@ close (int fd) {
 
 int dup2(int oldfd, int newfd){
 
+}
+
+void *mmap(void *addr, size_t length, int writable, int fd, off_t offset)
+{
+
+	if (!addr || addr != pg_round_down(addr))
+		return NULL;
+
+    if (offset != pg_round_down(offset))
+        return NULL;
+
+    if (!is_user_vaddr(addr) || !is_user_vaddr(addr + length))
+        return NULL;
+
+    if (spt_find_page(&thread_current()->spt, addr))
+        return NULL;
+
+    struct file *f = process_get_file(fd);
+    if (f == NULL)
+        return NULL;
+
+    if (file_length(f) == 0 || (int)length <= 0)
+        return NULL;
+
+    return do_mmap(addr, length, writable, f, offset);
 }
